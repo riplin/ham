@@ -51,12 +51,12 @@ namespace MixControl
     enum
     {
         LineInput = 0x01,
-        LineInputDisable = 0x00,
-        LineInputEnable = 0x01,
+        LineInputDisable = 0x01,
+        LineInputEnable = 0x00,
 
         LineOutput = 0x02,
-        LineOuputDisable = 0x00,
-        LineOutputEnable = 0x02,
+        LineOutputDisable = 0x02,
+        LineOutputEnable = 0x00,
 
         MicrophoneInput = 0x04,
         MicrophoneInputDisable = 0x00,

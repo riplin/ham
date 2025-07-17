@@ -22,6 +22,18 @@ namespace Register
 typedef uint8_t TimerControl_t;
 namespace TimerControl
 {
+    enum
+    {
+        //Write:
+        Timer1DataSelect = 0x02,
+        Timer2DataSelect = 0x03,
+        TimerControlSelect = 0x04,
+
+        //Read:
+        Timer2Expired = 0x20,
+        Timer1Expired = 0x40,
+        TimersExpired = 0x80
+    };
 
     inline TimerControl_t Read(Register_t baseAddress)
     {

@@ -42,6 +42,7 @@ include_directories(
 
 add_library(ham
             src/drivers/gravis/shared/system.cpp
+            src/file/mod/mod.cpp
            )
 
 add_executable(test

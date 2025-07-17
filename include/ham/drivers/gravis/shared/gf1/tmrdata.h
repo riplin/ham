@@ -43,8 +43,8 @@ namespace TimerData
     {
         Timer1Start = 0x01,
         Timer2Start = 0x02,
-        Timer1Mask = 0x20,
-        Timer2Mask = 0x40,
+        Timer2Mask = 0x20,
+        Timer1Mask = 0x40,
         ClearTimerInterrupt = 0x80
     };
 

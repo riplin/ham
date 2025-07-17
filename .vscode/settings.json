@@ -67,6 +67,9 @@
 		"VARS.C": "cpp",
 		"MIDI.C": "cpp",
 		"PEEKPOKE.C": "cpp",
-		"OPEN.C": "cpp"
+		"OPEN.C": "cpp",
+		"TIMER.C": "cpp",
+		"UTIL0.C": "cpp",
+		"IRQ.C": "cpp"
 	}
 }

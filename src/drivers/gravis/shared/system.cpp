@@ -1,9 +1,18 @@
 //Copyright 2025-Present riplin
 
+#include <dpmi.h>
+#include <go32.h>
 #include <support/env.h>
+#include <has/system/pic.h>
 #include <ham/drivers/gravis/shared/system.h>
 #include <ham/drivers/gravis/shared/gf1/page.h>
 #include <ham/drivers/gravis/shared/gf1/dramio.h>
+#include <ham/drivers/gravis/shared/gf1/tmrdata.h>
+#include <ham/drivers/gravis/shared/gf1/tmrctrl.h>
+#include <ham/drivers/gravis/shared/gf1/mixcrtl.h>
+#include <ham/drivers/gravis/shared/gf1/dmactrl.h>
+#include <ham/drivers/gravis/shared/gf1/regctrl.h>
+#include <ham/drivers/gravis/shared/gf1/intrctrl.h>
 #include <ham/drivers/gravis/shared/gf1/intrstat.h>
 #include <ham/drivers/gravis/shared/midi/control.h>
 #include <ham/drivers/gravis/shared/gf1/voice/endloc.h>
@@ -16,12 +25,15 @@
 #include <ham/drivers/gravis/shared/gf1/voice/frqctrl.h>
 #include <ham/drivers/gravis/shared/gf1/voice/actvvoc.h>
 #include <ham/drivers/gravis/shared/gf1/voice/intrsrc.h>
+#include <ham/drivers/gravis/shared/gf1/global/tmrcnt.h>
 #include <ham/drivers/gravis/shared/gf1/voice/volrmprt.h>
 #include <ham/drivers/gravis/shared/gf1/voice/startloc.h>
 #include <ham/drivers/gravis/shared/gf1/global/dramdma.h>
 #include <ham/drivers/gravis/shared/gf1/global/tmrctrl.h>
 #include <ham/drivers/gravis/shared/gf1/global/smpctrl.h>
 #include <ham/drivers/gravis/shared/gf1/global/dramioad.h>
+
+extern volatile uint32_t s_Counter;
 
 namespace Ham::Gravis::Shared::Function::System
 {
@@ -150,7 +162,7 @@ void ResetCard(Register_t baseAddress, uint8_t voiceCount)
 
     //Clear interrupts.
     DramDmaControl::Write(baseAddress, DramDmaControl::DmaInterruptDisable);
-    TimerControl::Write(baseAddress, TimerControl::Timer1Disable | TimerControl::Timer2Disable);
+    GF1::Global::TimerControl::Write(baseAddress, GF1::Global::TimerControl::Timer1Disable | GF1::Global::TimerControl::Timer2Disable);
     SamplingControl::Write(baseAddress, SamplingControl::DmaInterruptDisable);
 
     //Set number of active voices.
@@ -197,10 +209,177 @@ Register_t s_BaseAddress = 0;
 uint8_t s_PlayDMA = 0;
 uint8_t s_RecordDMA = 0;
 uint8_t s_UltrasoundInterrupt = 0;
-uint8_t s_SoundBlasterInterrupt = 0;
+uint8_t s_MidiInterrupt = 0;
 
-InitializeError_t ParseEnvironmentVariable()
+static GF1::InterruptControl_t s_InterruptLatchValues[16] =
 {
+    0,
+    0,
+    GF1::InterruptControl::Gf1Interrupt2,
+    GF1::InterruptControl::Gf1Interrupt3,
+    0,
+    GF1::InterruptControl::Gf1Interrupt5,
+    0,
+    GF1::InterruptControl::Gf1Interrupt7,
+    0,
+    0,
+    0,
+    GF1::InterruptControl::Gf1Interrupt11,
+    GF1::InterruptControl::Gf1Interrupt12,
+    0,
+    0,
+    GF1::InterruptControl::Gf1Interrupt15
+};
+
+static GF1::DmaControl_t s_DmaLatchValues[8] =
+{
+    GF1::DmaControl::Dma1SelectNone,
+    GF1::DmaControl::Dma1Select1,
+    GF1::DmaControl::Dma1SelectNone,
+    GF1::DmaControl::Dma1Select3,
+    GF1::DmaControl::Dma1SelectNone,
+    GF1::DmaControl::Dma1Select5,
+    GF1::DmaControl::Dma1Select6,
+    GF1::DmaControl::Dma1Select7
+};
+
+void UnmaskInterrupt(uint8_t interrupt)
+{
+    using namespace Has::System;
+
+    PIC::Mask_t mask = 1 << (interrupt & 0x07);
+
+    if (interrupt <= 7)
+    {
+        PIC::Mask::Write1(PIC::Mask::Read1() & ~mask);
+        PIC::Control::Write1(PIC::Control::SpecificEOI | interrupt);
+    }
+    else
+    {
+        PIC::Mask::Write2(PIC::Mask::Read2() & ~mask);
+        PIC::Control::Write2(PIC::Control::SpecificEOI | (interrupt & 0x7));
+    }
+}
+
+void MaskInterrupt(uint8_t interrupt)
+{
+    using namespace Has::System;
+
+    PIC::Mask_t mask = 1 << (interrupt & 0x07);
+
+    if (interrupt <= 7)
+    {
+        PIC::Mask::Write1(PIC::Mask::Read1() | mask);
+        PIC::Control::Write1(PIC::Control::SpecificEOI | interrupt);
+    }
+    else
+    {
+        PIC::Mask::Write2(PIC::Mask::Read2() | mask);
+        PIC::Control::Write2(PIC::Control::SpecificEOI | (interrupt & 0x7));
+    }
+}
+
+void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, uint8_t gf1Interrupt, uint8_t midiInterrupt)
+{
+    s_BaseAddress = baseAddress;
+    s_PlayDMA = playDma;
+    s_RecordDMA = recordDma;
+    s_UltrasoundInterrupt = gf1Interrupt;
+    s_MidiInterrupt = midiInterrupt;
+
+    GF1::MixControl_t mixControl = GF1::MixControl::LineInputDisable | GF1::MixControl::LineOutputDisable |
+                                   GF1::MixControl::MicrophoneInputDisable | GF1::MixControl::LatchesEnable;
+
+    GF1::MixControl::Write(s_BaseAddress, mixControl);
+
+    GF1::InterruptControl_t interruptControl = s_InterruptLatchValues[gf1Interrupt & 0xf];
+    GF1::InterruptControl_t midiInterruptLatch = s_InterruptLatchValues[midiInterrupt & 0xf] << GF1::InterruptControl::Shift::MidiInterruptSelector;
+
+    GF1::DmaControl_t dmaControl = s_DmaLatchValues[playDma];
+    GF1::DmaControl_t recordDmaLatch = s_DmaLatchValues[recordDma] << GF1::DmaControl::Shift::Dma2Selector;
+
+	if ((gf1Interrupt == midiInterrupt) && (gf1Interrupt != 0))
+    {
+        interruptControl |= GF1::InterruptControl::CombineInterrupts;
+    }
+    else
+    {
+        interruptControl |= midiInterruptLatch;
+    }
+
+	if ((playDma == recordDma) && (playDma != 0))
+    {
+        dmaControl |= GF1::DmaControl::CombineDma;
+    }
+    else
+    {
+        dmaControl |= recordDmaLatch;
+    }
+
+    //Setup
+    GF1::RegisterControl::Write(s_BaseAddress, GF1::RegisterControl::ClearInterruptPort);
+    GF1::MixControl::Write(s_BaseAddress, mixControl | GF1::MixControl::SelectDma);
+    GF1::DmaControl::Write(s_BaseAddress, 0);
+    GF1::RegisterControl::Write(s_BaseAddress, GF1::RegisterControl::Default);
+
+    //Configure DMA.
+    GF1::MixControl::Write(s_BaseAddress, mixControl | GF1::MixControl::SelectDma);
+    GF1::DmaControl::Write(s_BaseAddress, dmaControl | 0x80);//Undocumented flag
+
+    //Configure Interrupts.
+    GF1::MixControl::Write(s_BaseAddress, mixControl | GF1::MixControl::SelectInterrupt);
+    GF1::InterruptControl::Write(s_BaseAddress, interruptControl);
+
+    //Configure DMA again.
+    GF1::MixControl::Write(s_BaseAddress, mixControl | GF1::MixControl::SelectDma);
+    GF1::DmaControl::Write(s_BaseAddress, dmaControl);
+
+    //Configure Interrupts again.
+    GF1::MixControl::Write(s_BaseAddress, mixControl | GF1::MixControl::SelectInterrupt);
+    GF1::InterruptControl::Write(s_BaseAddress, interruptControl);
+
+    //Poke a port to lock the dma / interrupt port.
+    GF1::Page::Write(s_BaseAddress, 0x00);
+
+    //Set output, disable inputs.
+    GF1::MixControl::Write(s_BaseAddress, 
+        GF1::MixControl::LineInputDisable |
+        GF1::MixControl::LineOutputEnable |
+        GF1::MixControl::MicrophoneInputDisable |
+        GF1::MixControl::LatchesEnable);
+
+    //We touched MixControl, lock the dma / interrupt port by poking a different port.
+    GF1::Page::Write(s_BaseAddress, 0x00);
+
+    //Unmask the system interrupts
+	if (gf1Interrupt != 0)
+        UnmaskInterrupt(gf1Interrupt);
+
+	if ((midiInterrupt != gf1Interrupt) && (midiInterrupt != 0))
+        UnmaskInterrupt(midiInterrupt);
+    
+	//Unmask cascade interrupt 2
+	if (gf1Interrupt > 7 || midiInterrupt > 7)
+        UnmaskInterrupt(2);
+}
+
+void MaskInterrupts(uint8_t gf1Interrupt, uint8_t midiInterrupt)
+{
+    if ((gf1Interrupt != 0) && (gf1Interrupt != 2))
+        MaskInterrupt(gf1Interrupt);
+
+    if ((midiInterrupt != 0) && (midiInterrupt != 2))
+        MaskInterrupt(midiInterrupt);
+}
+
+InitializeError_t ParseEnvironmentVariable(Register_t& baseAddress, uint8_t& playDma, uint8_t& recordDma, uint8_t& gf1Interrupt, uint8_t& midiInterrupt)
+{
+    baseAddress = 0;
+    playDma = 0;
+    recordDma = 0;
+    gf1Interrupt = 0;
+    midiInterrupt = 0;
+
     const char* ultrasnd = Support::GetEnv("ULTRASND");
     if (ultrasnd != nullptr)
     {
@@ -289,11 +468,11 @@ InitializeError_t ParseEnvironmentVariable()
             return InitializeError::UltrasoundEnvInvalidValues;
         }
 
-        s_BaseAddress = values[0];
-        s_PlayDMA = values[1];
-        s_RecordDMA = values[2];
-        s_UltrasoundInterrupt = values[3];
-        s_SoundBlasterInterrupt = values[4];
+        baseAddress = values[0];
+        playDma = values[1];
+        recordDma = values[2];
+        gf1Interrupt = values[3];
+        midiInterrupt = values[4];
 
         return InitializeError::Success;
     }
@@ -301,17 +480,139 @@ InitializeError_t ParseEnvironmentVariable()
     return InitializeError::UltrasoundEnvNotFound;
 }
 
+bool SetupTimer1(uint8_t ticksPerSecond)
+{
+    uint16_t interval = 12500 / ticksPerSecond;
+    if (interval > 256)
+        return false;
+
+    int16_t countStart = 256 - interval;
+    GF1::Global::TimerCount::Write1(s_BaseAddress, GF1::Global::TimerCount_t(countStart));
+    GF1::Global::TimerControl::Write(s_BaseAddress,
+        GF1::Global::TimerControl::Read(s_BaseAddress) |
+        GF1::Global::TimerControl::Timer1Enable);
+    GF1::TimerControl::Write(s_BaseAddress, GF1::TimerControl::TimerControlSelect);
+    GF1::TimerData::Write(s_BaseAddress, GF1::TimerData::Timer1Start | GF1::TimerData::Timer2Mask);
+    return true;
+}
+
+bool SetupTimer2(uint8_t ticksPerSecond)
+{
+    uint16_t interval = 3125 / ticksPerSecond;
+    if (interval > 256)
+        return false;
+
+    int16_t countStart = 256 - interval;
+    GF1::Global::TimerCount::Write2(s_BaseAddress, GF1::Global::TimerCount_t(countStart));
+    GF1::Global::TimerControl::Write(s_BaseAddress,
+        GF1::Global::TimerControl::Read(s_BaseAddress) |
+        GF1::Global::TimerControl::Timer2Enable);
+    GF1::TimerControl::Write(s_BaseAddress, GF1::TimerControl::TimerControlSelect);
+    GF1::TimerData::Write(s_BaseAddress, GF1::TimerData::Timer2Start | GF1::TimerData::Timer1Mask);
+    return true;
+}
+
+void ShutdownTimers()
+{
+    GF1::Global::TimerControl::Write(s_BaseAddress, 0);
+    GF1::TimerControl::Write(s_BaseAddress, GF1::TimerControl::TimerControlSelect);
+    GF1::TimerData::Write(s_BaseAddress, GF1::TimerData::ClearTimerInterrupt);
+}
+
+TimerCallback_t s_Timer1Callback = nullptr;
+TimerCallback_t s_Timer2Callback = nullptr;
+
+void InterruptHandler()
+{
+    SYS_ClearInterrupts();
+    s_Counter = s_Counter + 1;
+    GF1::InterruptStatus_t status = GF1::InterruptStatus::Read(s_BaseAddress);
+    if (((status & GF1::InterruptStatus::Timer1) != 0) && (s_Timer1Callback != nullptr))
+    {
+        s_Timer1Callback();
+    }
+    if (((status & GF1::InterruptStatus::Timer2) != 0) && (s_Timer2Callback != nullptr))
+    {
+        s_Timer2Callback();
+    }
+    SYS_RestoreInterrupts();
+}
+
+static _go32_dpmi_seginfo s_OldHandler;
+static _go32_dpmi_seginfo s_OurHandler;
+
+void SetupInterruptHandler(uint8_t interrupt, void (*handler)())
+{
+    SYS_ClearInterrupts();
+
+    _go32_dpmi_get_protected_mode_interrupt_vector(interrupt, &s_OldHandler);
+
+    s_OurHandler.pm_offset = (unsigned long)handler;
+    s_OurHandler.pm_selector = _go32_my_cs();
+
+    _go32_dpmi_allocate_iret_wrapper(&s_OurHandler);
+
+    _go32_dpmi_set_protected_mode_interrupt_vector(interrupt, &s_OurHandler);
+
+    SYS_RestoreInterrupts();
+}
+
+void RestoreInterruptHandler(uint8_t interrupt)
+{
+    SYS_ClearInterrupts();
+    _go32_dpmi_set_protected_mode_interrupt_vector(interrupt, &s_OldHandler);
+    _go32_dpmi_free_iret_wrapper(&s_OurHandler);
+    SYS_RestoreInterrupts();
+}
+
+bool SetTimer1Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond)
+{
+    bool ret = false;
+    SYS_ClearInterrupts();
+    if (SetupTimer1(ticksPerSecond))
+    {
+        s_Timer1Callback = callback;
+        ret = true;
+    }
+    SYS_RestoreInterrupts();
+    return ret;
+}
+
+bool SetTimer2Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond)
+{
+    bool ret = false;
+    SYS_ClearInterrupts();
+    if (SetupTimer2(ticksPerSecond))
+    {
+        s_Timer2Callback = callback;
+        ret = true;
+    }
+    SYS_RestoreInterrupts();
+    return ret;
+}
+
+bool s_Initialized = false;
+
 InitializeError_t Initialize(Has::IAllocator& allocator)
 {
     s_Allocator = &allocator;
 
-    InitializeError_t ret = ParseEnvironmentVariable();
+    Register_t baseAddress = 0;
+    uint8_t playDma = 0;
+    uint8_t recordDma = 0;
+    uint8_t gf1Interrupt = 0;
+    uint8_t midiInterrupt = 0;
+
+    InitializeError_t ret = ParseEnvironmentVariable(baseAddress, playDma, recordDma, gf1Interrupt, midiInterrupt);
 
     if (ret == InitializeError::Success)
     {
-        if (DetectCard(s_BaseAddress))
+        if (DetectCard(baseAddress))
         {
-            ResetCard(s_BaseAddress, 14);
+            ResetCard(baseAddress, 14);
+            InitializeCard(baseAddress, playDma, recordDma, gf1Interrupt, midiInterrupt);
+            SetupInterruptHandler(s_UltrasoundInterrupt, InterruptHandler);
+            s_Initialized = true;
         }
         else
         {
@@ -324,7 +625,15 @@ InitializeError_t Initialize(Has::IAllocator& allocator)
 
 void Shutdown()
 {
-
+    if (s_Initialized)
+    {
+        ShutdownTimers();
+        MaskInterrupts(s_UltrasoundInterrupt, s_MidiInterrupt);
+        ResetCard(s_BaseAddress, 14);
+        GF1::Global::Reset::Write(s_BaseAddress, GF1::Global::Reset::MasterDisable | GF1::Global::Reset::InterruptDisable | GF1::Global::Reset::DacDisable);
+        RestoreInterruptHandler(s_UltrasoundInterrupt);
+        s_Initialized = false;
+    }
 }
 
 }
