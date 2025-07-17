@@ -1,6 +1,7 @@
 #include <conio.h>
 #include <stdio.h>
 
+#include <has/testing/log.h>
 #include <support/allocatr.h>
 #include <ham/file/mod/mod.h>
 #include <ham/drivers/gravis/shared/system.h>
@@ -16,6 +17,8 @@ int main(int argc, const char** argv)
 {
     using namespace Ham::Gravis::Shared;
     using namespace Ham::File;
+
+    LOG_CONFIGURE("test.txt");
 
     Support::Allocator allocator;
 

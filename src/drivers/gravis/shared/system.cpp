@@ -1,9 +1,11 @@
 //Copyright 2025-Present riplin
 
+#include "has/system/sysasm.h"
 #include <dpmi.h>
 #include <go32.h>
 #include <support/env.h>
 #include <has/system/pic.h>
+#include <has/testing/log.h>
 #include <ham/drivers/gravis/shared/system.h>
 #include <ham/drivers/gravis/shared/gf1/page.h>
 #include <ham/drivers/gravis/shared/gf1/dramio.h>
@@ -63,19 +65,15 @@ namespace InitializeError
 
 GF1::DramIO_t ReadMemory(Register_t baseAddress, GF1::Global::DramIOAddress_t address)
 {
-    SYS_ClearInterrupts();
     GF1::Global::DramIOAddress::Write(baseAddress, address);
     GF1::DramIO_t ret = GF1::DramIO::Read(baseAddress);
-    SYS_RestoreInterrupts();
     return ret;
 }
 
 void WriteMemory(Register_t baseAddress, GF1::Global::DramIOAddress_t address, GF1::DramIO_t value)
 {
-    SYS_ClearInterrupts();
     GF1::Global::DramIOAddress::Write(baseAddress, address);
     GF1::DramIO::Write(baseAddress, value);
-    SYS_RestoreInterrupts();
 }
 
 void Wait(Register_t baseAddress, uint16_t count = 1)
@@ -90,6 +88,8 @@ bool DetectCard(Register_t baseAddress)
 {
     using namespace Ham::Gravis::Shared::GF1;
     using namespace Ham::Gravis::Shared::GF1::Global;
+
+    SYS_ClearInterrupts();
 
     //Reset card.
     Reset::Write(baseAddress, Reset::MasterDisable);
@@ -119,6 +119,8 @@ bool DetectCard(Register_t baseAddress)
     WriteMemory(baseAddress, 0, value1);
     WriteMemory(baseAddress, 1, value2);
 
+    SYS_RestoreInterrupts();
+
     //If they are the same, success!
     return (check1 == 0x55) && (check2 == 0xaa);
 }
@@ -133,11 +135,11 @@ void ResetCard(Register_t baseAddress, uint8_t voiceCount)
 
     voiceCount = min<uint8_t>(max<uint8_t>(voiceCount, 14), 32);
 
+    SYS_ClearInterrupts();
+
     //Set first two bytes of memory to 0 for quiet voices.
     WriteMemory(baseAddress, 0, 0);
     WriteMemory(baseAddress, 1, 0);
-
-    SYS_ClearInterrupts();
 
     //Reset the card.
     Reset::Write(baseAddress, Reset::MasterDisable);
@@ -202,6 +204,8 @@ void ResetCard(Register_t baseAddress, uint8_t voiceCount)
     Reset::Write(baseAddress, Reset::MasterEnable | Reset::DacEnable | Reset::InterruptEnable);
 
     SYS_RestoreInterrupts();
+
+    LOG("Gravis", "Card reset");
 }
 
 static Has::IAllocator* s_Allocator = nullptr;
@@ -287,6 +291,7 @@ void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, 
     s_UltrasoundInterrupt = gf1Interrupt;
     s_MidiInterrupt = midiInterrupt;
 
+    SYS_ClearInterrupts();
     GF1::MixControl_t mixControl = GF1::MixControl::LineInputDisable | GF1::MixControl::LineOutputDisable |
                                    GF1::MixControl::MicrophoneInputDisable | GF1::MixControl::LatchesEnable;
 
@@ -298,7 +303,7 @@ void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, 
     GF1::DmaControl_t dmaControl = s_DmaLatchValues[playDma];
     GF1::DmaControl_t recordDmaLatch = s_DmaLatchValues[recordDma] << GF1::DmaControl::Shift::Dma2Selector;
 
-	if ((gf1Interrupt == midiInterrupt) && (gf1Interrupt != 0))
+    if ((gf1Interrupt == midiInterrupt) && (gf1Interrupt != 0))
     {
         interruptControl |= GF1::InterruptControl::CombineInterrupts;
     }
@@ -352,24 +357,32 @@ void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, 
     GF1::Page::Write(s_BaseAddress, 0x00);
 
     //Unmask the system interrupts
-	if (gf1Interrupt != 0)
+    if (gf1Interrupt != 0)
         UnmaskInterrupt(gf1Interrupt);
 
-	if ((midiInterrupt != gf1Interrupt) && (midiInterrupt != 0))
+    if ((midiInterrupt != gf1Interrupt) && (midiInterrupt != 0))
         UnmaskInterrupt(midiInterrupt);
     
 	//Unmask cascade interrupt 2
-	if (gf1Interrupt > 7 || midiInterrupt > 7)
+    if (gf1Interrupt > 7 || midiInterrupt > 7)
         UnmaskInterrupt(2);
+
+    SYS_RestoreInterrupts();
+
+    LOG("Gravis", "Card initialized");
 }
 
 void MaskInterrupts(uint8_t gf1Interrupt, uint8_t midiInterrupt)
 {
+    SYS_ClearInterrupts();
     if ((gf1Interrupt != 0) && (gf1Interrupt != 2))
         MaskInterrupt(gf1Interrupt);
 
     if ((midiInterrupt != 0) && (midiInterrupt != 2))
         MaskInterrupt(midiInterrupt);
+    SYS_RestoreInterrupts();
+
+    LOG("Gravis", "Interrupts masked");
 }
 
 InitializeError_t ParseEnvironmentVariable(Register_t& baseAddress, uint8_t& playDma, uint8_t& recordDma, uint8_t& gf1Interrupt, uint8_t& midiInterrupt)
@@ -484,15 +497,23 @@ bool SetupTimer1(uint8_t ticksPerSecond)
 {
     uint16_t interval = 12500 / ticksPerSecond;
     if (interval > 256)
+    {
+        LOG("Gravis", "Error setting up timer 1, can't count up from %i, ticks per second: %i", interval, ticksPerSecond);
         return false;
+    }
 
     int16_t countStart = 256 - interval;
+    SYS_ClearInterrupts();
     GF1::Global::TimerCount::Write1(s_BaseAddress, GF1::Global::TimerCount_t(countStart));
     GF1::Global::TimerControl::Write(s_BaseAddress,
         GF1::Global::TimerControl::Read(s_BaseAddress) |
         GF1::Global::TimerControl::Timer1Enable);
     GF1::TimerControl::Write(s_BaseAddress, GF1::TimerControl::TimerControlSelect);
     GF1::TimerData::Write(s_BaseAddress, GF1::TimerData::Timer1Start | GF1::TimerData::Timer2Mask);
+    SYS_RestoreInterrupts();
+
+    LOG("Gravis", "Timer 1 set up: %i ticks per second, count up from: %i", ticksPerSecond, countStart);
+
     return true;
 }
 
@@ -500,23 +521,35 @@ bool SetupTimer2(uint8_t ticksPerSecond)
 {
     uint16_t interval = 3125 / ticksPerSecond;
     if (interval > 256)
+    {
+        LOG("Gravis", "Error setting up timer 2, can't count up from %i, ticks per second: %i", interval, ticksPerSecond);
         return false;
+    }
 
     int16_t countStart = 256 - interval;
+    SYS_ClearInterrupts();
     GF1::Global::TimerCount::Write2(s_BaseAddress, GF1::Global::TimerCount_t(countStart));
     GF1::Global::TimerControl::Write(s_BaseAddress,
         GF1::Global::TimerControl::Read(s_BaseAddress) |
         GF1::Global::TimerControl::Timer2Enable);
     GF1::TimerControl::Write(s_BaseAddress, GF1::TimerControl::TimerControlSelect);
     GF1::TimerData::Write(s_BaseAddress, GF1::TimerData::Timer2Start | GF1::TimerData::Timer1Mask);
+    SYS_RestoreInterrupts();
+
+    LOG("Gravis", "Timer 2 set up: %i ticks per second, count up from: %i", ticksPerSecond, countStart);
+
     return true;
 }
 
 void ShutdownTimers()
 {
+    SYS_ClearInterrupts();
     GF1::Global::TimerControl::Write(s_BaseAddress, 0);
     GF1::TimerControl::Write(s_BaseAddress, GF1::TimerControl::TimerControlSelect);
     GF1::TimerData::Write(s_BaseAddress, GF1::TimerData::ClearTimerInterrupt);
+    SYS_RestoreInterrupts();
+
+    LOG("Gravis", "Timers shut down");
 }
 
 TimerCallback_t s_Timer1Callback = nullptr;
@@ -543,51 +576,56 @@ static _go32_dpmi_seginfo s_OurHandler;
 
 void SetupInterruptHandler(uint8_t interrupt, void (*handler)())
 {
-    SYS_ClearInterrupts();
-
-    _go32_dpmi_get_protected_mode_interrupt_vector(interrupt, &s_OldHandler);
-
     s_OurHandler.pm_offset = (unsigned long)handler;
     s_OurHandler.pm_selector = _go32_my_cs();
-
     _go32_dpmi_allocate_iret_wrapper(&s_OurHandler);
-
+    
+    SYS_ClearInterrupts();
+    _go32_dpmi_get_protected_mode_interrupt_vector(interrupt, &s_OldHandler);
     _go32_dpmi_set_protected_mode_interrupt_vector(interrupt, &s_OurHandler);
-
     SYS_RestoreInterrupts();
+
+    LOG("Gravis", "Interrupt handler set up");
 }
 
 void RestoreInterruptHandler(uint8_t interrupt)
 {
     SYS_ClearInterrupts();
     _go32_dpmi_set_protected_mode_interrupt_vector(interrupt, &s_OldHandler);
-    _go32_dpmi_free_iret_wrapper(&s_OurHandler);
     SYS_RestoreInterrupts();
+
+    _go32_dpmi_free_iret_wrapper(&s_OurHandler);
+
+    LOG("Gravis", "Interrupt handler restored");
 }
 
 bool SetTimer1Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond)
 {
     bool ret = false;
-    SYS_ClearInterrupts();
     if (SetupTimer1(ticksPerSecond))
     {
+        SYS_ClearInterrupts();
         s_Timer1Callback = callback;
+        SYS_RestoreInterrupts();
+        LOG("Gravis", "Timer 1 handler set");
         ret = true;
     }
-    SYS_RestoreInterrupts();
+
     return ret;
 }
 
 bool SetTimer2Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond)
 {
     bool ret = false;
-    SYS_ClearInterrupts();
     if (SetupTimer2(ticksPerSecond))
     {
+        SYS_ClearInterrupts();
         s_Timer2Callback = callback;
+        SYS_RestoreInterrupts();
+        LOG("Gravis", "Timer 2 handler set");
         ret = true;
     }
-    SYS_RestoreInterrupts();
+
     return ret;
 }
 
@@ -607,8 +645,12 @@ InitializeError_t Initialize(Has::IAllocator& allocator)
 
     if (ret == InitializeError::Success)
     {
+        LOG("Gravis", "Environment read: base address: 0x%03X, play dma: %i, record dma: %i, gf1 irq: %i, midi irq: %i", baseAddress, playDma, recordDma, gf1Interrupt, midiInterrupt);
+
         if (DetectCard(baseAddress))
         {
+            LOG("Gravis", "Card detected");
+
             ResetCard(baseAddress, 14);
             InitializeCard(baseAddress, playDma, recordDma, gf1Interrupt, midiInterrupt);
             SetupInterruptHandler(s_UltrasoundInterrupt, InterruptHandler);
@@ -633,6 +675,7 @@ void Shutdown()
         GF1::Global::Reset::Write(s_BaseAddress, GF1::Global::Reset::MasterDisable | GF1::Global::Reset::InterruptDisable | GF1::Global::Reset::DacDisable);
         RestoreInterruptHandler(s_UltrasoundInterrupt);
         s_Initialized = false;
+        LOG("Gravis", "Card shut down");
     }
 }
 
