@@ -71,11 +71,6 @@ namespace InterruptSource
         return Data::Read8High(baseAddress, uint8_t(Register::InterruptSource) + uint8_t(Register::BaseRead));
     }
 
-    inline void Write(Register_t baseAddress, InterruptSource_t value)
-    {
-        Data::Write8High(baseAddress, uint8_t(Register::InterruptSource) + uint8_t(Register::BaseWrite), value);
-    }
-
 }
 
 }

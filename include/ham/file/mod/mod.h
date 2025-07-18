@@ -24,22 +24,26 @@ namespace Ham::File
             uint8_t Parameter;
         };
 
-        inline const char* GetName() { return m_Name; }
-        inline uint8_t GetChannelCount() { return m_ChannelCount; }
-        inline uint8_t GetOrderCount() { return m_OrderCount; }
-        inline uint8_t GetOrder(uint8_t index) { return m_Orders[index]; }
-        inline uint8_t GetPatternCount() { return m_PatternCount;}
-        inline Note* GetPattern(uint8_t index) { return m_Patterns[index]; }
+        inline const char* GetName() const { return m_Name; }
+        inline uint8_t GetChannelCount() const { return m_ChannelCount; }
+        inline uint8_t GetOrderCount() const { return m_OrderCount; }
+        inline uint8_t GetOrder(uint8_t index) const { return m_Orders[index]; }
+        inline uint8_t GetPatternCount() const { return m_PatternCount;}
+        inline Note* GetPattern(uint8_t index) const { return m_Patterns[index]; }
         
-        inline const char* GetNoteName(uint8_t note) { return s_Notes[note]; }
+        inline const char* GetNoteName(uint8_t note) const { return s_Notes[note]; }
 
-        inline uint8_t GetSampleCount() { return 31; }
-        inline const char* GetSampleName(uint8_t index) { return m_Samples[index].Name; }
-        inline uint16_t GetSampleLength(uint8_t index) { return m_Samples[index].Length; }
-        inline uint8_t GetSampleFineTune(uint8_t index) { return m_Samples[index].FineTune; }
-        inline uint8_t GetSampleVolume(uint8_t index) { return m_Samples[index].Volume; }
-        inline uint16_t GetSampleLoopStart(uint8_t index) { return m_Samples[index].LoopStart; }
-        inline uint16_t GetSampleLoopEnd(uint8_t index) { return m_Samples[index].LoopEnd; }
+        inline uint8_t GetSampleCount() const { return 31; }
+        inline const char* GetSampleName(uint8_t index) const { return m_Samples[index].Name; }
+        inline uint16_t GetSampleLength(uint8_t index) const { return m_Samples[index].Length; }
+        inline uint8_t GetSampleFineTune(uint8_t index) const { return m_Samples[index].FineTune; }
+        inline uint8_t GetSampleVolume(uint8_t index) const { return m_Samples[index].Volume; }
+        inline uint16_t GetSampleLoopStart(uint8_t index) const { return m_Samples[index].LoopStart; }
+        inline uint16_t GetSampleLoopEnd(uint8_t index) const { return m_Samples[index].LoopEnd; }
+        inline uint8_t* GetSampleData(uint8_t index) const { return m_Samples[index].Data; }
+        inline uint32_t GetSampleAddress(uint8_t index) const { return m_Samples[index].Address; }
+        inline void SetSampleAddress(uint8_t index, uint32_t address) { m_Samples[index].Address = address; }
+        
     private:
         Mod(Has::IAllocator& allocator);
         ~Mod();
@@ -53,6 +57,8 @@ namespace Ham::File
             uint8_t Volume;
             uint16_t LoopStart;
             uint16_t LoopEnd;
+            uint32_t Address;
+            uint8_t* Data;
         };
 
         Has::IAllocator& m_Allocator;
@@ -63,7 +69,6 @@ namespace Ham::File
         uint8_t m_Orders[128];
         uint8_t m_PatternCount;
         Note* m_Patterns[256];
-        uint8_t* m_SampleData[31];
 
         static uint16_t s_Periods[16][36];
         static const char* s_Notes[36];

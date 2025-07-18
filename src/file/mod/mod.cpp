@@ -13,7 +13,6 @@ Mod::Mod(Has::IAllocator& allocator)
 {
     memset(m_Name, 0, sizeof(m_Name));
     memset(m_Patterns, 0, sizeof(m_Patterns));
-    memset(m_SampleData, 0, sizeof(m_SampleData));
 }
 
 Mod::~Mod()
@@ -24,10 +23,10 @@ Mod::~Mod()
             m_Allocator.Free(m_Patterns[i]);
     }
 
-    for (uint16_t i = 0; i < (sizeof(m_SampleData) / sizeof(uint8_t*)); ++i)
+    for (uint16_t i = 0; i < (sizeof(m_Samples) / sizeof(Sample)); ++i)
     {
-        if (m_SampleData[i] != nullptr)
-            m_Allocator.Free(m_SampleData[i]);
+        if (m_Samples[i].Data != nullptr)
+            m_Allocator.Free(m_Samples[i].Data);
     }
 }
 
@@ -177,6 +176,11 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
             Mod::Destroy(mod);
             return nullptr;
         }
+        if (mod->m_Samples[i].LoopEnd == 2)
+            mod->m_Samples[i].LoopEnd = 0;
+
+        mod->m_Samples[i].Data = nullptr;
+        mod->m_Samples[i].Address = 0;
     }
 
     if (!stream.Read(sizeof(mod->m_OrderCount), &mod->m_OrderCount))
@@ -244,8 +248,8 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
     {
         if (mod->m_Samples[i].Length != 0)
         {
-            mod->m_SampleData[i] = allocator.AllocateAs<uint8_t>(mod->m_Samples[i].Length);
-            if (!stream.Read(mod->m_Samples[i].Length, mod->m_SampleData[i]))
+            mod->m_Samples[i].Data = allocator.AllocateAs<uint8_t>(mod->m_Samples[i].Length);
+            if (!stream.Read(mod->m_Samples[i].Length, mod->m_Samples[i].Data))
             {
                 Mod::Destroy(mod);
                 return nullptr;

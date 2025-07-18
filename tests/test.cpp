@@ -1,20 +1,63 @@
 #include <conio.h>
 #include <stdio.h>
 
+#include <has/system/pic.h>
 #include <has/testing/log.h>
 #include <support/allocatr.h>
 #include <ham/file/mod/mod.h>
+#include <has/system/interrup.h>
 #include <ham/drivers/gravis/shared/system.h>
-
-volatile uint32_t s_Counter = 0;
 
 void Handler()
 {
-    s_Counter = s_Counter + 1;
+    
+}
+
+volatile uint32_t s_Counter5 = 0;
+void TestHandler5()
+{
+    Has::System::PIC::Control::ClearPendingInterrupt(5);
+    s_Counter5 = s_Counter5 + 1;
+}
+
+volatile uint32_t s_Counter7 = 0;
+void TestHandler7()
+{
+    Has::System::PIC::Control::ClearPendingInterrupt(7);
+    s_Counter7 = s_Counter7 + 1;
+}
+
+volatile uint32_t s_Counter8 = 0;   //Control
+void TestHandler8()
+{
+    Has::System::PIC::Control::ClearPendingInterrupt(8);
+    s_Counter8 = s_Counter8 + 1;
+}
+
+volatile uint32_t s_Counter11 = 0;
+void TestHandler11()
+{
+    Has::System::PIC::Control::ClearPendingInterrupt(11);
+    s_Counter11 = s_Counter11 + 1;
+}
+
+volatile uint32_t s_Counter12 = 0;
+void TestHandler12()
+{
+    Has::System::PIC::Control::ClearPendingInterrupt(12);
+    s_Counter12 = s_Counter12 + 1;
+}
+
+volatile uint32_t s_Counter15 = 0;
+void TestHandler15()
+{
+    Has::System::PIC::Control::ClearPendingInterrupt(15);
+    s_Counter15 = s_Counter15 + 1;
 }
 
 int main(int argc, const char** argv)
 {
+    using namespace Has::System;
     using namespace Ham::Gravis::Shared;
     using namespace Ham::File;
 
@@ -35,6 +78,26 @@ int main(int argc, const char** argv)
         printf("Error loading mod file.\n");
         return -1;
     }
+
+    // InterruptTable::SetupHandler(5, TestHandler5);
+    // InterruptTable::SetupHandler(7, TestHandler7);
+    // InterruptTable::SetupHandler(8, TestHandler8);
+    // InterruptTable::SetupHandler(11, TestHandler11);
+    // InterruptTable::SetupHandler(12, TestHandler12);
+    // InterruptTable::SetupHandler(15, TestHandler15);
+    // PIC::Mask::UnmaskInterrupt(5);
+    // PIC::Mask::UnmaskInterrupt(7);
+    // PIC::Mask::UnmaskInterrupt(8);
+    // PIC::Mask::UnmaskInterrupt(11);
+    // PIC::Mask::UnmaskInterrupt(12);
+    // PIC::Mask::UnmaskInterrupt(15);
+
+    // uint32_t prev5 = -1;
+    // uint32_t prev7 = -1;
+    // uint32_t prev8 = -1;
+    // uint32_t prev11 = -1;
+    // uint32_t prev12 = -1;
+    // uint32_t prev15 = -1;
 
     auto result = Function::System::Initialize(allocator);
 
@@ -109,26 +172,84 @@ int main(int argc, const char** argv)
     }
     */
 
-    uint32_t prev = -1;
-
-    if (!Function::System::SetTimer1Handler(Handler, 50))
+    //TODO: proper memory management
+    GF1::Global::DramIOAddress_t address = 16;
+    for (uint8_t i = 0; i < mod->GetSampleCount(); ++i)
     {
-        printf("Failed!\n");
+        if (mod->GetSampleLength(i) == 0)
+            continue;
+
+        mod->SetSampleAddress(i, address);
+        Function::System::UploadSound(address, mod->GetSampleData(i), mod->GetSampleLength(i));
+
+        address += mod->GetSampleLength(i);
+        printf("Sample %i: length: %i, loop start: %i, loop end: %i\n", i, mod->GetSampleLength(i), mod->GetSampleLoopStart(i), mod->GetSampleLoopEnd(i));
     }
 
+    GF1::Page_t voice = 0;
+    for (uint8_t i = 0; i < mod->GetSampleCount(); ++i)
+    {
+        if (mod->GetSampleLength(i) == 0)
+            continue;
+
+        Function::System::SetLinearVolume(voice, 511);
+
+        GF1::Global::DramIOAddress_t loopEnd = mod->GetSampleAddress(i) + mod->GetSampleLength(i);
+        if (mod->GetSampleLoopEnd(i) != 0)
+            loopEnd = mod->GetSampleAddress(i) + mod->GetSampleLoopEnd(i);
+        GF1::Global::DramIOAddress_t loopStart = mod->GetSampleAddress(i) + mod->GetSampleLoopStart(i);
+
+        printf("Play: %i, start: 0x%06lX, loopStart: 0x%06lX, loopEnd: 0x%06lX\n", i, mod->GetSampleAddress(i), loopStart, loopEnd - 1);
+
+        Function::System::PlayVoice(voice, mod->GetSampleAddress(i), loopStart, loopEnd,
+            GF1::Voice::VoiceControl::Bits8 |
+            GF1::Voice::VoiceControl::Forward |
+            GF1::Voice::VoiceControl::LoopToBegin | //No sound if this isn't set. Also, only plays once. Go figure.
+            GF1::Voice::VoiceControl::InterruptEnable | //Still no interrupts...
+            GF1::Voice::VoiceControl::Play);
+
+        ++voice;
+        break;
+    }
+
+    Function::System::SetTimer1Handler(Handler, 50);
+
+    printf("\nTest that timers are running:\n");
     do
     {
-        if (s_Counter != prev)
-        {
-            printf("Counter: %li\r", s_Counter);
-            prev = s_Counter;
-        }
+        // if ((s_Counter5 != prev5) ||
+        //     (s_Counter7 != prev7) ||
+        //     (s_Counter8 != prev8) ||
+        //     (s_Counter11 != prev11) ||
+        //     (s_Counter12 != prev12) ||
+        //     (s_Counter15 != prev15))
+        // {
+        //     prev5 = s_Counter5;
+        //     prev7 = s_Counter7;
+        //     prev8 = s_Counter8;
+        //     prev11 = s_Counter11;
+        //     prev12 = s_Counter12;
+        //     prev15 = s_Counter15;
+        //     printf("C5: %li, C7: %li, C8: %li, C11: %li, C12: %li, C15: %li\r", prev5, prev7, prev8, prev11, prev12, prev15);
+        // }
     } while (!kbhit());
 
     Mod::Destroy(mod);
     mod = nullptr;
 
     Function::System::Shutdown();
+
+    // PIC::Mask::MaskInterrupt(5);
+    // PIC::Mask::MaskInterrupt(7);
+    // PIC::Mask::MaskInterrupt(11);
+    // PIC::Mask::MaskInterrupt(12);
+    // PIC::Mask::MaskInterrupt(15);
+    // InterruptTable::RestoreHandler(5);
+    // InterruptTable::RestoreHandler(7);
+    // InterruptTable::RestoreHandler(8);
+    // InterruptTable::RestoreHandler(11);
+    // InterruptTable::RestoreHandler(12);
+    // InterruptTable::RestoreHandler(15);
 
     return 0;
 }

@@ -26,7 +26,8 @@ namespace DramIOAddress
 
     enum
     {
-        Value = 0x0fffff
+        Value = 0x0fffff,
+        BankSelect = 0x0c0000
     };
 
     namespace Shift

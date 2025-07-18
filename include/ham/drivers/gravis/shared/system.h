@@ -4,8 +4,12 @@
 
 #include <functional>
 #include <has/ialloc.h>
+#include <ham/drivers/gravis/shared/gf1/page.h>
 #include <ham/drivers/gravis/shared/midi/data.h>
 #include <ham/drivers/gravis/shared/midi/status.h>
+#include <ham/drivers/gravis/shared/gf1/voice/curvol.h>
+#include <ham/drivers/gravis/shared/gf1/voice/vocctrl.h>
+#include <ham/drivers/gravis/shared/gf1/global/dramioad.h>
 
 namespace Ham::Gravis::Shared::Function::System
 {
@@ -31,8 +35,8 @@ namespace Ham::Gravis::Shared::Function::System
 
     typedef std::function<void(void)> TimerCallback_t;
 
-    extern bool SetTimer1Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond);
-    extern bool SetTimer2Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond);
+    extern void SetTimer1Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond);
+    extern void SetTimer2Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond);
 
 
     typedef std::function<void(Midi::Status_t status)> MidiTransmitCallback_t;
@@ -43,4 +47,15 @@ namespace Ham::Gravis::Shared::Function::System
     typedef std::function<void(Midi::Status_t status, Midi::Data_t data)> MidiReceiveCallback_t;
 
     extern void SetMidiReceiveCallback(const MidiReceiveCallback_t& callback);
+
+    extern void UploadSound(GF1::Global::DramIOAddress_t boardAddress, uint8_t* data, uint32_t length);
+
+    extern void PlayVoice(GF1::Page_t voice,
+                          GF1::Global::DramIOAddress_t startLocation,
+                          GF1::Global::DramIOAddress_t loopStart,
+                          GF1::Global::DramIOAddress_t loopEnd,
+                          GF1::Voice::VoiceControl_t voiceControl, bool rollover = false);
+
+    extern void SetVolume(GF1::Page_t voice, GF1::Voice::CurrentVolume_t volume);
+    extern void SetLinearVolume(GF1::Page_t voice, uint16_t volume);
 }
