@@ -27,14 +27,16 @@ namespace DramIOAddress
     enum
     {
         Value = 0x0fffff,
-        BankSelect = 0x0c0000
+        BankSelect = 0x0c0000,
+        BankSize = 0x040000     //256 * 1024
     };
 
     namespace Shift
     {
         enum
         {
-            Value = 0x00
+            Value = 0x00,
+            BankSelect = 0x12,
         };
     }
 

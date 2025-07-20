@@ -144,12 +144,14 @@ void ResetCard(Register_t baseAddress, uint8_t voiceCount)
 
     //Reset the card.
     Reset::Write(baseAddress, Reset::MasterDisable);
+    LOG("Gravis", "Select: %i", Index::Read(baseAddress));
 
     //Wait.
     Wait(baseAddress, 10);
 
     //Re-enable the card (silent).
     Reset::Write(baseAddress, Reset::MasterEnable | Reset::DacDisable | Reset::InterruptDisable);
+    LOG("Gravis", "Select: %i", Index::Read(baseAddress));
 
     //Wait.
     Wait(baseAddress, 10);
@@ -203,6 +205,7 @@ void ResetCard(Register_t baseAddress, uint8_t voiceCount)
 
     //Enable DAC, enable interrupts.
     Reset::Write(baseAddress, Reset::MasterEnable | Reset::DacEnable | Reset::InterruptEnable);
+    LOG("Gravis", "Select: %i", Index::Read(baseAddress));
 
     SYS_RestoreInterrupts();
 
@@ -300,11 +303,11 @@ GF1::Voice::VoiceControl_t SetVoice(GF1::Page_t voice,
         GF1::Voice::VolumeRampControl::Write(s_BaseAddress, volumeRampControl);
     }
 
-    GF1::Voice::CurrentLocation::Write(s_BaseAddress, startLocation);
-    GF1::Voice::StartLocation::Write(s_BaseAddress, loopStart);
-    GF1::Voice::EndLocation::Write(s_BaseAddress, loopEnd);
+    GF1::Voice::CurrentLocation::Write(s_BaseAddress, startLocation << GF1::Voice::CurrentLocation::Shift::Address);
+    GF1::Voice::StartLocation::Write(s_BaseAddress, loopStart << GF1::Voice::StartLocation::Shift::Address);
+    GF1::Voice::EndLocation::Write(s_BaseAddress, loopEnd << GF1::Voice::EndLocation::Shift::Address);
     SYS_RestoreInterrupts();
-
+    
     return voiceControl;
 }
 
@@ -385,6 +388,74 @@ void SetLinearVolume(GF1::Page_t voice, uint16_t volume)
     SetVolume(voice,volume);
 }
 
+//Starts at 14.
+static unsigned int s_FrequencyPerVoice[19] =
+{
+    44100,
+    41160,
+    38587,
+    36317,
+    34300,
+    32494,
+    30870,
+    29400,
+    28063,
+    26843,
+    25725,
+    24696,
+    23746,
+    22866,
+    22050,
+    21289,
+    20580,
+    19916,
+    19293
+};
+
+void SetPlaybackFrequency(GF1::Page_t voice, uint16_t frequencyInKHz, uint16_t activeVoices)
+{
+    using namespace Has;
+    uint8_t voiceCount = max<uint8_t>(min<uint8_t>(activeVoices, 32), 14);
+    uint32_t divisor = s_FrequencyPerVoice[voiceCount - 14];
+    uint32_t freq = ((uint32_t(frequencyInKHz) << 9) + (divisor >> 1)) / divisor;
+    freq <<= 1;
+    
+    SYS_ClearInterrupts();
+    GF1::Page::Write(s_BaseAddress, voice);
+    GF1::Voice::FrequencyControl::Write(s_BaseAddress, GF1::Voice::FrequencyControl_t(freq));
+    SYS_RestoreInterrupts();
+}
+
+void SetPan(GF1::Page_t voice, GF1::Voice::PanPosition_t pan)
+{
+    using namespace Has;
+    SYS_ClearInterrupts();
+    GF1::Page::Write(s_BaseAddress, voice);
+    GF1::Voice::PanPosition::Write(s_BaseAddress, min<GF1::Voice::PanPosition_t>(pan, 0xf));
+    SYS_RestoreInterrupts();
+}
+
+void ResetVoice(GF1::Page_t voice)
+{
+    using namespace Has;
+    using namespace GF1::Voice;
+    SYS_ClearInterrupts();
+    GF1::Page::Write(s_BaseAddress, voice);
+    VoiceControl::Write(s_BaseAddress, GF1::Voice::VoiceControl::Stop | GF1::Voice::VoiceControl::Stopped);
+    Wait(s_BaseAddress);
+    VoiceControl::Write(s_BaseAddress, GF1::Voice::VoiceControl::Stop | GF1::Voice::VoiceControl::Stopped);
+    FrequencyControl::Write(s_BaseAddress, 0x400);//1.0
+    StartLocation::Write(s_BaseAddress, 0);
+    EndLocation::Write(s_BaseAddress, 0);
+    VolumeRampRate::Write(s_BaseAddress, 1);
+    VolumeRamp::WriteStart(s_BaseAddress, 0x10);
+    VolumeRamp::WriteEnd(s_BaseAddress, 0xe0);
+    CurrentVolume::Write(s_BaseAddress, 0);
+    CurrentLocation::Write(s_BaseAddress, 0);
+    PanPosition::Write(s_BaseAddress, 7);
+    SYS_RestoreInterrupts();
+}
+
 void PlayVoice(GF1::Page_t voice,
                 GF1::Global::DramIOAddress_t startLocation,
                 GF1::Global::DramIOAddress_t loopStart,
@@ -396,7 +467,27 @@ void PlayVoice(GF1::Page_t voice,
 
     SYS_ClearInterrupts();
     GF1::Page::Write(s_BaseAddress, voice);
+    GF1::Voice::VoiceControl::Write(s_BaseAddress, voiceControl);
+    Wait(s_BaseAddress);
+    GF1::Voice::VoiceControl::Write(s_BaseAddress, voiceControl);
+    SYS_RestoreInterrupts();
+}
 
+void StopVoice(GF1::Page_t voice)
+{
+    SYS_ClearInterrupts();
+    GF1::Page::Write(s_BaseAddress, voice);
+    GF1::Voice::VoiceControl::Write(s_BaseAddress, GF1::Voice::VoiceControl::Stop | GF1::Voice::VoiceControl::Stopped);
+    Wait(s_BaseAddress);
+    GF1::Voice::VoiceControl::Write(s_BaseAddress, GF1::Voice::VoiceControl::Stop | GF1::Voice::VoiceControl::Stopped);
+    SYS_RestoreInterrupts();
+}
+
+void ResumeVoice(GF1::Page_t voice)
+{
+    SYS_ClearInterrupts();
+    GF1::Page::Write(s_BaseAddress, voice);
+    GF1::Voice::VoiceControl_t voiceControl = GF1::Voice::VoiceControl::Read(s_BaseAddress) & ~(GF1::Voice::VoiceControl::Stop | GF1::Voice::VoiceControl::Stopped);
     GF1::Voice::VoiceControl::Write(s_BaseAddress, voiceControl);
     Wait(s_BaseAddress);
     GF1::Voice::VoiceControl::Write(s_BaseAddress, voiceControl);
@@ -411,11 +502,8 @@ void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, 
     s_UltrasoundInterrupt = gf1Interrupt;
     s_MidiInterrupt = midiInterrupt;
 
-    SYS_ClearInterrupts();
     GF1::MixControl_t mixControl = GF1::MixControl::LineInputDisable | GF1::MixControl::LineOutputDisable |
                                    GF1::MixControl::MicrophoneInputDisable | GF1::MixControl::LatchesEnable;
-
-    GF1::MixControl::Write(s_BaseAddress, mixControl);
 
     GF1::InterruptControl_t interruptControl = s_InterruptLatchValues[gf1Interrupt & 0xf];
     GF1::InterruptControl_t midiInterruptLatch = s_InterruptLatchValues[midiInterrupt & 0xf] << GF1::InterruptControl::Shift::MidiInterruptSelector;
@@ -426,6 +514,7 @@ void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, 
     if ((gf1Interrupt == midiInterrupt) && (gf1Interrupt != 0))
     {
         interruptControl |= GF1::InterruptControl::CombineInterrupts;
+        LOG("Gravis", "Interrupts for GF1 and Midi are shared");
     }
     else
     {
@@ -435,11 +524,15 @@ void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, 
 	if ((playDma == recordDma) && (playDma != 0))
     {
         dmaControl |= GF1::DmaControl::CombineDma;
+        LOG("Gravis", "Dma channels for GF1 and Midi are shared");
     }
     else
     {
         dmaControl |= recordDmaLatch;
     }
+
+    SYS_ClearInterrupts();
+    GF1::MixControl::Write(s_BaseAddress, mixControl);
 
     //Setup
     GF1::RegisterControl::Write(s_BaseAddress, GF1::RegisterControl::ClearInterruptPort);
@@ -475,9 +568,11 @@ void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, 
 
     //We touched MixControl, lock the dma / interrupt port by poking a different port.
     GF1::Page::Write(s_BaseAddress, 0x00);
-    SYS_RestoreInterrupts();
 
-    LOG("Gravis", "Card initialized");
+    //Enable DAC, enable interrupts.
+    GF1::Global::Reset::Write(baseAddress, GF1::Global::Reset::MasterEnable | GF1::Global::Reset::DacEnable | GF1::Global::Reset::InterruptEnable);
+
+    SYS_RestoreInterrupts();
 }
 
 void UnmaskInterrupts(uint8_t gf1Interrupt, uint8_t midiInterrupt)
@@ -637,7 +732,7 @@ void StopTimers()
     GF1::Global::TimerControl::Write(s_BaseAddress, GF1::Global::TimerControl::Timer1Disable | GF1::Global::TimerControl::Timer2Disable);
     SYS_RestoreInterrupts();
 
-    LOG("Gravis", "Timers shut down");
+    LOG("Gravis", "Timer stop tries needed: %i", 16 - tries);
 }
 
 bool StartTimers(uint8_t ticksPerSecond1, uint8_t ticksPerSecond2)
@@ -931,10 +1026,10 @@ InitializeError_t Initialize(Has::IAllocator& allocator)
 
             ResetCard(baseAddress, 14);
             InitializeCard(baseAddress, playDma, recordDma, gf1Interrupt, midiInterrupt);
-            InterruptTable::SetupHandler(s_UltrasoundInterrupt, UltrasoundInterruptHandler);
-            if (s_UltrasoundInterrupt != s_MidiInterrupt)
-                InterruptTable::SetupHandler(s_MidiInterrupt, MidiInterruptHandler);
-            UnmaskInterrupts(gf1Interrupt, midiInterrupt);
+            // InterruptTable::SetupHandler(s_UltrasoundInterrupt, UltrasoundInterruptHandler);
+            // if (s_UltrasoundInterrupt != s_MidiInterrupt)
+            //     InterruptTable::SetupHandler(s_MidiInterrupt, MidiInterruptHandler);
+            // UnmaskInterrupts(gf1Interrupt, midiInterrupt);
             StartTimers(50, 100);
             s_Initialized = true;
         }
@@ -942,6 +1037,7 @@ InitializeError_t Initialize(Has::IAllocator& allocator)
         {
             ret = InitializeError::CardNotFound;
         }
+        LOG("Gravis", "Card initialized");
     }
 
     return ret;
@@ -953,11 +1049,12 @@ void Shutdown()
 
     if (s_Initialized)
     {
+        LOG("Gravis", "Card shutting down");
         StopTimers();
-        MaskInterrupts(s_UltrasoundInterrupt, s_MidiInterrupt);
-        InterruptTable::RestoreHandler(s_UltrasoundInterrupt);
-        if (s_UltrasoundInterrupt != s_MidiInterrupt)
-            InterruptTable::RestoreHandler(s_MidiInterrupt);
+        // MaskInterrupts(s_UltrasoundInterrupt, s_MidiInterrupt);
+        // InterruptTable::RestoreHandler(s_UltrasoundInterrupt);
+        // if (s_UltrasoundInterrupt != s_MidiInterrupt)
+        //     InterruptTable::RestoreHandler(s_MidiInterrupt);
         ResetCard(s_BaseAddress, 14);
         GF1::Global::Reset::Write(s_BaseAddress, GF1::Global::Reset::MasterDisable | GF1::Global::Reset::InterruptDisable | GF1::Global::Reset::DacDisable);
         s_Initialized = false;

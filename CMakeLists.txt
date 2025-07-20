@@ -43,6 +43,7 @@ include_directories(
 add_library(ham
             src/drivers/gravis/shared/system.cpp
             src/file/mod/mod.cpp
+            src/player/player.cpp
            )
 
 add_executable(test

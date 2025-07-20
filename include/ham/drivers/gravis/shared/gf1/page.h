@@ -26,10 +26,11 @@ typedef uint8_t Page_t;
 namespace Page
 {
 
-    inline Page_t Read(Register_t baseAddress)
-    {
-        return SYS_ReadPortByte(baseAddress + Register::Page);
-    }
+    // Doesn't return the same value. comment out for now.
+    // inline Page_t Read(Register_t baseAddress)
+    // {
+    //     return SYS_ReadPortByte(baseAddress + Register::Page);
+    // }
 
     inline void Write(Register_t baseAddress, Page_t value)
     {

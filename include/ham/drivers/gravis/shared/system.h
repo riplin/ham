@@ -7,6 +7,7 @@
 #include <ham/drivers/gravis/shared/gf1/page.h>
 #include <ham/drivers/gravis/shared/midi/data.h>
 #include <ham/drivers/gravis/shared/midi/status.h>
+#include <ham/drivers/gravis/shared/gf1/voice/panpos.h>
 #include <ham/drivers/gravis/shared/gf1/voice/curvol.h>
 #include <ham/drivers/gravis/shared/gf1/voice/vocctrl.h>
 #include <ham/drivers/gravis/shared/gf1/global/dramioad.h>
@@ -32,7 +33,6 @@ namespace Ham::Gravis::Shared::Function::System
     extern InitializeError_t Initialize(Has::IAllocator& allocator);
     extern void Shutdown();
 
-
     typedef std::function<void(void)> TimerCallback_t;
 
     extern void SetTimer1Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond);
@@ -56,6 +56,16 @@ namespace Ham::Gravis::Shared::Function::System
                           GF1::Global::DramIOAddress_t loopEnd,
                           GF1::Voice::VoiceControl_t voiceControl, bool rollover = false);
 
+    extern void StopVoice(GF1::Page_t voice);
+    
+    extern void ResumeVoice(GF1::Page_t voice);
+
     extern void SetVolume(GF1::Page_t voice, GF1::Voice::CurrentVolume_t volume);
     extern void SetLinearVolume(GF1::Page_t voice, uint16_t volume);
+
+    extern void SetPlaybackFrequency(GF1::Page_t voice, uint16_t frequencyInKHz, uint16_t activeVoices);
+
+    extern void SetPan(GF1::Page_t voice, GF1::Voice::PanPosition_t pan);
+
+    extern void ResetVoice(GF1::Page_t voice);
 }
