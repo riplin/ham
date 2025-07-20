@@ -146,6 +146,10 @@ void Player::Reset()
         m_Channels[i].VibratoSpeed = 0;
         m_Channels[i].VibratoPosition = 0;
         m_Channels[i].VibratoWaveType = WaveType::Sine;
+        m_Channels[i].TremoloDepth = 0;
+        m_Channels[i].TremoloSpeed = 0;
+        m_Channels[i].TremoloPosition = 0;
+        m_Channels[i].TremoloWaveType = WaveType::Sine;
 
         Function::System::ResetVoice(i);
         Function::System::SetPan(i, m_Channels[i].Balance);
@@ -229,12 +233,13 @@ void Player::HandleTick0(uint8_t channel)
         m_Channels[channel].SampleBegin = m_Module->GetSampleAddress(sample);
         m_Channels[channel].SampleLoopStart = m_Module->GetSampleAddress(sample) + m_Module->GetSampleLoopStart(sample);
         
-        //TODO: Process Tremolo
-
         if ((m_Channels[channel].VibratoWaveType & WaveType::DontRetrigger) == 0)
             m_Channels[channel].VibratoPosition = 0;
 
-        if ((currentNote->Effect != Mod::Effect::PortamentoToNote) && (currentNote->Effect != Mod::Effect::PortamentoAndVolSlide))
+        if ((m_Channels[channel].TremoloWaveType & WaveType::DontRetrigger) == 0)
+            m_Channels[channel].TremoloPosition = 0;
+
+        if ((currentNote->Effect != Mod::Effect::PortamentoToNote) && (currentNote->Effect != Mod::Effect::PortamentoAndVolumeSlide))
         {
             m_Channels[channel].Period = correctPeriod;
             periodDirty = true;
@@ -261,11 +266,17 @@ void Player::HandleTick0(uint8_t channel)
             if ((currentNote->Parameter & 0x0F) != 0)
                 m_Channels[channel].VibratoDepth = currentNote->Parameter & 0x0F;
             break;
-        case Mod::Effect::PortamentoAndVolSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
+        case Mod::Effect::PortamentoAndVolumeSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
             if (correctPeriod != 0)
             {
                 m_Channels[channel].PortaTarget = correctPeriod;
             }
+            break;
+        case Mod::Effect::Tremolo:// 5.8 Effect 7xy (Tremolo)
+            if ((currentNote->Parameter & 0xF0) != 0)
+                m_Channels[channel].TremoloSpeed = (currentNote->Parameter & 0xF0) >> 4;
+            if ((currentNote->Parameter & 0x0F) != 0)
+                m_Channels[channel].TremoloDepth = currentNote->Parameter & 0x0F;
             break;
         case Mod::Effect::Pan:// 5.9 Effect 8xy (Pan)
             m_Channels[channel].Balance = min<uint8_t>(currentNote->Parameter >> 3, 0xf);
@@ -326,6 +337,7 @@ void Player::HandleTick0(uint8_t channel)
             case Mod::SubEffect::GlissandoControl:// 5.19 Effect E3x (Glissando Control)
                 break;
             case Mod::SubEffect::SetVibratoWaveform:// 5.20 Effect E4x (Set Vibrato Waveform)
+                m_Channels[channel].VibratoWaveType = WaveType(currentNote->Parameter & 0x07);
                 break;
             case Mod::SubEffect::SetFinetune:// 5.21 Effect E5x (Set Finetune)
                 {
@@ -357,6 +369,7 @@ void Player::HandleTick0(uint8_t channel)
                 }
                 break;
             case Mod::SubEffect::SetTremoloWaveForm:// 5.23 Effect E7x (Set Tremolo WaveForm)
+                m_Channels[channel].TremoloWaveType = WaveType(currentNote->Parameter & 0x07);
                 break;
             case Mod::SubEffect::FinePanning:// 5.24 Effect E8x (16 Position Panning)
                 m_Channels[channel].Balance = currentNote->Parameter & 0x0F;
@@ -491,6 +504,44 @@ int16_t Player::ProcessVibrato(uint8_t channel)
     return delta;
 }
 
+int16_t Player::ProcessTremolo(uint8_t channel)
+{
+    uint8_t pos = m_Channels[channel].TremoloPosition & 0x31;
+
+    int16_t delta = 0;
+    switch(m_Channels[channel].TremoloWaveType & WaveType::Type)
+    {
+    case WaveType::Sine:
+        delta = s_SineTable[pos];
+        break;
+    case WaveType::SawTooth:
+        pos <<= 3;
+        if (m_Channels[channel].TremoloPosition < 0)
+            pos = 0xFF - pos;
+        delta = pos;
+        break;
+    case WaveType::Square:
+        delta = 0xFF;
+        break;
+    case WaveType::Random:
+        delta = s_SineTable[pos];
+        break;
+    }
+
+    delta *= m_Channels[channel].TremoloDepth;
+    delta >>= 7;
+
+    if (m_Channels[channel].TremoloPosition < 0)
+        delta = -delta;
+
+    m_Channels[channel].TremoloPosition += m_Channels[channel].TremoloSpeed;
+
+    if (m_Channels[channel].TremoloPosition > 31)
+        m_Channels[channel].TremoloPosition -= 64;
+
+    return delta;
+}
+
 void Player::HandleTickX(uint8_t channel)
 {
     using namespace Has;
@@ -506,6 +557,7 @@ void Player::HandleTickX(uint8_t channel)
     bool volumeDirty = false;
     bool periodDirty = false;
     int16_t periodDelta = 0;
+    int16_t volumeDelta = 0;
 
     switch(currentNote->Effect)
     {
@@ -526,16 +578,18 @@ void Player::HandleTickX(uint8_t channel)
         periodDelta = ProcessVibrato(channel);
         periodDirty = true;
         break;
-    case Mod::Effect::PortamentoAndVolSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
+    case Mod::Effect::PortamentoAndVolumeSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
         volumeDirty = ProcessVolumeSlide(channel, currentNote->Parameter);
         periodDirty = ProcessPortamentoToNote(channel);
         break;
-    case Mod::Effect::VibratoAndVolSlide:// 5.7 Effect 6xy (Vibrato + Vol Slide)
+    case Mod::Effect::VibratoAndVolumeSlide:// 5.7 Effect 6xy (Vibrato + Vol Slide)
         volumeDirty = ProcessVolumeSlide(channel, currentNote->Parameter);
         periodDelta = ProcessVibrato(channel);
         periodDirty = true;
         break;
     case Mod::Effect::Tremolo:// 5.8 Effect 7xy (Tremolo)
+        volumeDelta = ProcessTremolo(channel);
+        volumeDirty = true;
         break;
     case Mod::Effect::VolumeSlide:// 5.11 Effect Axy (Volume Slide)
         volumeDirty = ProcessVolumeSlide(channel, currentNote->Parameter);
@@ -583,7 +637,7 @@ void Player::HandleTickX(uint8_t channel)
 
     if (volumeDirty)
     {
-        m_Channels[channel].Volume = min<int16_t>(max<int16_t>(0, m_Channels[channel].Volume), 64);
+        m_Channels[channel].Volume = min<int16_t>(max<int16_t>(0, m_Channels[channel].Volume + volumeDelta), 64);
         Function::System::SetVolume(channel, s_Volume[m_Channels[channel].Volume]);
     }
 

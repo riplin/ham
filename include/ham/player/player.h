@@ -64,6 +64,7 @@ private:
     bool ProcessPortamentoToNote(uint8_t channel);
     bool ProcessVolumeSlide(uint8_t channel, uint8_t parameter);
     int16_t ProcessVibrato(uint8_t channel);
+    int16_t ProcessTremolo(uint8_t channel);
 
     void CalculateNextValues();
 
@@ -98,6 +99,10 @@ private:
         uint8_t VibratoSpeed;
         int8_t VibratoPosition;
         WaveType VibratoWaveType;
+        uint8_t TremoloDepth;
+        uint8_t TremoloSpeed;
+        int8_t TremoloPosition;
+        WaveType TremoloWaveType;
     };
 
     Channel m_Channels[32];
