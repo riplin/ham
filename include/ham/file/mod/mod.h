@@ -64,11 +64,11 @@ namespace Ham::File
         enum Effect : uint8_t
         {
             Arpeggio = 0x00,
-            PortaUp = 0x01,
-            PortaDown = 0x02,
-            PortaToNote = 0x03,
+            PortamentoUp = 0x01,
+            PortamentoDown = 0x02,
+            PortamentoToNote = 0x03,
             Vibrato = 0x04,
-            PortaAndVolSlide = 0x05,
+            PortamentoAndVolSlide = 0x05,
             VibratoAndVolSlide = 0x06,
             Tremolo = 0x07,
             Pan = 0x08,

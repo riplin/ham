@@ -77,10 +77,10 @@ int main(int argc, const char** argv)
 
     s_Player->Play();
 
-    volatile uint8_t row = -1;
+    volatile uint8_t tick = -1;
     do
     {
-        if (row != s_Player->GetCurrentRow())
+        if (tick != s_Player->GetCurrentTick())
         {
             uint8_t currentOrder = s_Mod->GetOrder(s_Player->GetCurrentOrderIndex());
             Mod::Note* currentPattern = s_Mod->GetPattern(currentOrder);
@@ -120,10 +120,53 @@ int main(int argc, const char** argv)
                 param3[1] = hex[currentRow[3].Parameter & 0x0f];
             }
 
-            printf("[%3i/%2i] | %s %c%s | %s %c%s | %s %c%s | %s %c%s |\r", 
-                s_Player->GetCurrentOrderIndex(), s_Player->GetCurrentRow(), note0, effect0, param0, note1, effect1, param1, note2, effect2, param2, note3, effect3, param3);
-            LOG("Play", "[%3i/%2i] | %s %c%s | %s %c%s | %s %c%s | %s %c%s |", s_Player->GetCurrentOrderIndex(), s_Player->GetCurrentRow(), note0, effect0, param0, note1, effect1, param1, note2, effect2, param2, note3, effect3, param3);
-            row = s_Player->GetCurrentRow();
+            char instr0[3] = {'_', '_', '\0' };
+            char instr1[3] = {'_', '_', '\0' };
+            char instr2[3] = {'_', '_', '\0' };
+            char instr3[3] = {'_', '_', '\0' };
+
+            if (currentRow[0].Sample != 0)
+            {
+                instr0[0] = hex[currentRow[0].Sample >> 4];
+                instr0[1] = hex[currentRow[0].Sample & 0x0f];
+            }
+            if (currentRow[1].Sample != 0)
+            {
+                instr1[0] = hex[currentRow[1].Sample >> 4];
+                instr1[1] = hex[currentRow[1].Sample & 0x0f];
+            }
+            if (currentRow[2].Sample != 0)
+            {
+                instr2[0] = hex[currentRow[2].Sample >> 4];
+                instr2[1] = hex[currentRow[2].Sample & 0x0f];
+            }
+            if (currentRow[3].Sample != 0)
+            {
+                instr3[0] = hex[currentRow[3].Sample >> 4];
+                instr3[1] = hex[currentRow[3].Sample & 0x0f];
+            }
+
+            char vol0[3] = { 0 };
+            char vol1[3] = { 0 };
+            char vol2[3] = { 0 };
+            char vol3[3] = { 0 };
+
+            vol0[0] = hex[(s_Player->GetChannelVolume(0) & 0xF0) >> 4];
+            vol0[1] = hex[s_Player->GetChannelVolume(0) & 0x0F];
+
+            vol1[0] = hex[(s_Player->GetChannelVolume(1) & 0xF0) >> 4];
+            vol1[1] = hex[s_Player->GetChannelVolume(1) & 0x0F];
+
+            vol2[0] = hex[(s_Player->GetChannelVolume(2) & 0xF0) >> 4];
+            vol2[1] = hex[s_Player->GetChannelVolume(2) & 0x0F];
+
+            vol3[0] = hex[(s_Player->GetChannelVolume(3) & 0xF0) >> 4];
+            vol3[1] = hex[s_Player->GetChannelVolume(3) & 0x0F];
+
+            printf("[%3i/%2i/%2i]|%s %s %c%s %s|%s %s %c%s %s|%s %s %c%s %s| %s %s %c%s %s|\r", 
+                s_Player->GetCurrentOrderIndex(), s_Player->GetCurrentRow(), s_Player->GetCurrentTick(), instr0, note0, effect0, param0, vol0, instr1, note1, effect1, param1, vol1, instr2, note2, effect2, param2, vol2, instr3, note3, effect3, param3, vol3);
+            LOG("Play", "[%3i/%2i/%2i] | %s %s %c%s %s | %s %s %c%s %s | %s %s %c%s %s | %s %s %c%s %s |", s_Player->GetCurrentOrderIndex(), s_Player->GetCurrentRow(), s_Player->GetCurrentTick(), instr0, note0, effect0, param0, vol0, instr1, note1, effect1, param1, vol1, instr2, note2, effect2, param2, vol2, instr3, note3, effect3, param3, vol3);
+            tick = s_Player->GetCurrentTick();
         }
     } while (!kbhit());
 

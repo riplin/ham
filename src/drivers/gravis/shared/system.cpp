@@ -447,6 +447,7 @@ void ResetVoice(GF1::Page_t voice)
     FrequencyControl::Write(s_BaseAddress, 0x400);//1.0
     StartLocation::Write(s_BaseAddress, 0);
     EndLocation::Write(s_BaseAddress, 0);
+    VolumeRampControl::Write(s_BaseAddress, VolumeRampControl::Stop | VolumeRampControl::Stopped);
     VolumeRampRate::Write(s_BaseAddress, 1);
     VolumeRamp::WriteStart(s_BaseAddress, 0x10);
     VolumeRamp::WriteEnd(s_BaseAddress, 0xe0);

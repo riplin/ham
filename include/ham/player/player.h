@@ -49,6 +49,8 @@ public:
     inline uint8_t GetCurrentRow() const { return m_CurrentRow; }
     inline uint8_t GetCurrentOrderIndex() const { return m_CurrentOrderIndex; }
 
+    inline uint8_t GetChannelVolume(uint8_t channel) const { return m_Channels[channel].Volume; }
+    inline uint16_t GetChannelPeriod(uint8_t channel) const { return m_Channels[channel].Period; }
 private:
 
     void Reset();
@@ -59,24 +61,43 @@ private:
     void HandleTick0(uint8_t channel);
     void HandleTickX(uint8_t channel);
 
+    bool ProcessPortamentoToNote(uint8_t channel);
+    bool ProcessVolumeSlide(uint8_t channel, uint8_t parameter);
+    int16_t ProcessVibrato(uint8_t channel);
+
     void CalculateNextValues();
+
+    enum WaveType : uint8_t
+    {
+        Type = 0x03,
+        Sine = 0x00,
+        SawTooth = 0x01,
+        Square = 0x02,
+        Random = 0x03,
+        DontRetrigger = 0x04
+    };
 
     struct Channel
     {
         uint32_t SampleBegin;
         uint32_t SampleLoopStart;
         uint32_t SampleLoopEnd;
-        uint16_t Period;
+        int16_t Period;
         uint16_t PortaTarget;
         int16_t Volume;
         uint16_t Note;
-        uint8_t PortaSpeed;
+        uint16_t PortaSpeed;
+        uint8_t SampleOffset;
         uint8_t FineTune;
         uint8_t Balance;
         uint8_t Parameter;
         uint8_t Sample;
         uint8_t LoopTarget;
         uint8_t LoopCounter;
+        uint8_t VibratoDepth;
+        uint8_t VibratoSpeed;
+        int8_t VibratoPosition;
+        WaveType VibratoWaveType;
     };
 
     Channel m_Channels[32];
@@ -110,6 +131,7 @@ private:
     uint32_t m_MemoryRemaining[4];
 
     static uint16_t s_Volume[65];
+    static uint8_t s_SineTable[32];
 };
 
 }

@@ -204,8 +204,14 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
             Mod::Destroy(mod);
             return nullptr;
         }
+        mod->m_Samples[i].LoopEnd += mod->m_Samples[i].LoopStart;
+
         if (mod->m_Samples[i].LoopEnd == 2)
             mod->m_Samples[i].LoopEnd = 0;
+
+            
+        if (mod->m_Samples[i].LoopEnd > mod->m_Samples[i].Length)
+            mod->m_Samples[i].LoopEnd = mod->m_Samples[i].Length;
 
         mod->m_Samples[i].Data = nullptr;
         mod->m_Samples[i].Address = 0;
@@ -266,12 +272,32 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
     {
         if (mod->m_Samples[i].Length != 0)
         {
-            mod->m_Samples[i].Data = allocator.AllocateAs<uint8_t>(mod->m_Samples[i].Length);
-            if (!stream.Read(mod->m_Samples[i].Length, mod->m_Samples[i].Data))
+            uint32_t position = stream.Position();
+            uint16_t length = mod->m_Samples[i].Length;
+            if (mod->m_Samples[i].LoopEnd != 0)
+                length = min<uint16_t>(mod->m_Samples[i].LoopEnd, length);
+
+            mod->m_Samples[i].Data = allocator.AllocateAs<uint8_t>(length + 1);
+            if (!stream.Read(length, mod->m_Samples[i].Data))
             {
                 Mod::Destroy(mod);
                 return nullptr;
             }
+
+            stream.SeekFromStart(position + mod->m_Samples[i].Length);
+            mod->m_Samples[i].Length = length;
+
+            //Click fix (TODO 16 bit):
+            if (mod->m_Samples[i].LoopEnd != 0)
+            {
+                mod->m_Samples[i].Data[mod->m_Samples[i].LoopEnd] = mod->m_Samples[i].Data[mod->m_Samples[i].LoopStart];
+            }
+            else
+            {
+                mod->m_Samples[i].Data[mod->m_Samples[i].LoopEnd] = 0;
+            }
+            ++mod->m_Samples[i].Length;
+
         }
     }
 
