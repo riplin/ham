@@ -23,7 +23,7 @@ public:
     {
         using namespace Ham::Gravis::Shared;
         //TODO: query the card for number of banks.
-        m_MemoryRemaining[0] = GF1::Global::DramIOAddress::BankSize - 16;
+        m_MemoryRemaining[0] = GF1::Global::DramIOAddress::BankSize - 32;
         m_MemoryRemaining[1] = GF1::Global::DramIOAddress::BankSize;
         m_MemoryRemaining[2] = GF1::Global::DramIOAddress::BankSize;
         m_MemoryRemaining[3] = GF1::Global::DramIOAddress::BankSize;
@@ -40,6 +40,8 @@ public:
 
     void Resume();
 
+    inline bool IsPaused() const { return m_State == State::Paused; }
+
     inline void Stop() { Reset(); }
 
     inline uint8_t GetSpeed() const { return m_Speed; }
@@ -53,6 +55,10 @@ public:
     inline uint8_t GetChannelVolume(uint8_t channel) const { return m_Channels[channel].Volume; }
     inline uint16_t GetChannelPeriod(uint8_t channel) const { return m_Channels[channel].Period; }
     inline uint8_t GetChannelBalance(uint8_t channel) const { return m_Channels[channel].Balance; }
+
+    void ToggleChannelMute(uint8_t channel);
+    inline bool IsChannelMuted(uint8_t channel) const { return m_Channels[channel].Mute; }
+
 private:
 
     void Reset();
@@ -105,6 +111,7 @@ private:
         uint8_t TremoloSpeed;
         int8_t TremoloPosition;
         WaveType TremoloWaveType;
+        bool Mute;
     };
 
     Channel m_Channels[32];

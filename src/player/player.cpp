@@ -84,7 +84,7 @@ void Player::Pause()
     SYS_Barrier();
     for (uint8_t channel = 0; channel < 32; ++channel)
     {
-        Function::System::SetLinearVolume(channel, 0);
+        Function::System::SetVolume(channel, s_Volume[0]);
         Function::System::StopVoice(channel);
     }
 }
@@ -96,10 +96,22 @@ void Player::Resume()
     for (uint8_t channel = 0; channel < 32; ++channel)
     {
         Function::System::ResumeVoice(channel);
-        Function::System::SetVolume(channel, m_Channels[channel].Volume);
+        Function::System::SetVolume(channel, s_Volume[m_Channels[channel].Volume]);
+        m_Channels[channel].Mute = false;
     }
     SYS_Barrier();
     m_State = State::Playing;
+}
+
+void Player::ToggleChannelMute(uint8_t channel)
+{
+    using namespace Gravis::Shared;
+
+    m_Channels[channel].Mute = !m_Channels[channel].Mute;
+    if (m_Channels[channel].Mute)
+        Function::System::SetVolume(channel, s_Volume[0]);
+    else
+        Function::System::SetVolume(channel, s_Volume[m_Channels[channel].Volume]);
 }
 
 void Player::Reset()
@@ -150,6 +162,7 @@ void Player::Reset()
         m_Channels[i].TremoloSpeed = 0;
         m_Channels[i].TremoloPosition = 0;
         m_Channels[i].TremoloWaveType = WaveType::Sine;
+        m_Channels[i].Mute = false;
 
         Function::System::ResetVoice(i);
         Function::System::SetPan(i, m_Channels[i].Balance);
@@ -175,7 +188,10 @@ void Player::UploadSamples()
 
 uint32_t Player::AllocateCardMemory(uint32_t size)
 {
+    using namespace Has;
     using namespace Ham::Gravis::Shared;
+
+    size = alignup<uint32_t>(size, 32);
     for (uint32_t i = 0; i < sizeof(m_MemoryRemaining) / sizeof(uint32_t); ++i)
     {
         if (m_MemoryRemaining[i] >= size)
@@ -408,7 +424,10 @@ void Player::HandleTick0(uint8_t channel)
     if (volumeDirty)
     {
         m_Channels[channel].Volume = min<int16_t>(max<int16_t>(0, m_Channels[channel].Volume), 64);
-        Function::System::SetVolume(channel, s_Volume[m_Channels[channel].Volume]);
+        if (m_Channels[channel].Mute)
+            Function::System::SetVolume(channel, s_Volume[0]);
+        else
+            Function::System::SetVolume(channel, s_Volume[m_Channels[channel].Volume]);
     }
 
     if (panDirty)
@@ -638,7 +657,10 @@ void Player::HandleTickX(uint8_t channel)
     if (volumeDirty)
     {
         m_Channels[channel].Volume = min<int16_t>(max<int16_t>(0, m_Channels[channel].Volume + volumeDelta), 64);
-        Function::System::SetVolume(channel, s_Volume[m_Channels[channel].Volume]);
+        if (m_Channels[channel].Mute)
+            Function::System::SetVolume(channel, s_Volume[0]);
+        else
+            Function::System::SetVolume(channel, s_Volume[m_Channels[channel].Volume]);
     }
 
 }

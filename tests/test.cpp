@@ -2,6 +2,7 @@
 
 #include <conio.h>
 #include <stdio.h>
+#include <sys/nearptr.h>
 #include <has/system/pic.h>
 #include <has/system/pit.h>
 #include <hag/system/bda.h>
@@ -9,6 +10,7 @@
 #include <support/allocatr.h>
 #include <ham/file/mod/mod.h>
 #include <ham/player/player.h>
+#include <has/system/keyboard.h>
 #include <has/system/interrup.h>
 #include <hag/drivers/vga/vga.h>
 #include <hag/drivers/vga/modeset.h>
@@ -354,13 +356,19 @@ uint8_t progressGlyphs[] =
     0b00000000,
 };
 
-void SetupScreen()
+bool SetupScreen()
 {
     using namespace Hag;
     using namespace Hag::System;
 
+    LOG("Test", "Setting video mode...");
     // Stock 80x50 text mode.
-    VGA::ModeSetting::SetVideoMode(80, 50, VGA::ModeSetting::BitsPerPixel::Bpp4, VGA::ModeSetting::Flags::Text);
+    VGA::ModeSetting::SetVideoError_t error = VGA::ModeSetting::SetVideoMode(80, 50, VGA::ModeSetting::BitsPerPixel::Bpp4, VGA::ModeSetting::Flags::Text);
+    if (error != VGA::ModeSetting::SetVideoError::Success)
+    {
+        LOG("Test", "Error setting video mode: %s", VGA::ModeSetting::SetVideoError::ToString(error));
+        return false;
+    }
     VGA::ModeSetting::SetCursor(false, 0, 0);
 
     // Turn screen off for a momen and set to 8 dot per character.
@@ -398,6 +406,8 @@ void SetupScreen()
     // Turn screen back on.
     VGA::Sequencer::ClockingMode::Write(
         VGA::Sequencer::ClockingMode::Read() & ~VGA::Sequencer::ClockingMode::ScreenOff);
+
+    return true;
 }
 
 void WriteString(const char* str, uint8_t x, uint8_t y)
@@ -499,24 +509,24 @@ void WriteStatic()
     FillRectangle(0, height - 1, width - 1, height - 1, ' ', (Colors::RoyalPurple << 4) | Colors::White, width);
 
     // Body
-    FillRectangle(0, 1, width - 1, 8, ' ', (Colors::DarkRoyalPurple << 4) | Colors::White, width);
+    FillRectangle(0, 1, width - 1, 9, ' ', (Colors::DarkRoyalPurple << 4) | Colors::White, width);
 
     // Rows
-    FillRectangle(0, 13, width - 1, 47, ' ', (Colors::Black << 4) | Colors::DarkGrey, width);
+    FillRectangle(0, 11, width - 1, 47, ' ', (Colors::Black << 4) | Colors::DarkGrey, width);
 
     // Highlight rows
     uint8_t* screenPtr = FARPointer(0xB800, 0x0000).ToPointer<uint8_t>();
 
     for (uint16_t i = 0; i < width; ++i)
     {
-        screenPtr[(14 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
-        screenPtr[(18 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
-        screenPtr[(22 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
-        screenPtr[(26 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
-        screenPtr[(34 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
-        screenPtr[(38 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
-        screenPtr[(42 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
-        screenPtr[(46 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
+        screenPtr[(13 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
+        screenPtr[(17 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
+        screenPtr[(21 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
+        screenPtr[(25 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
+        screenPtr[(33 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
+        screenPtr[(37 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
+        screenPtr[(41 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
+        screenPtr[(45 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
     }
 
     //|00000000001111111111222222222233333333334444444444555555555566666666667777777777
@@ -524,37 +534,37 @@ void WriteStatic()
     //|---------+---------+---------+---------+---------+---------+---------+---------+|
     //| XX   SS NNN EPP VV  SS NNN EPP VV  SS NNN EPP VV  SS NNN EPP VV  SS NNN EPP VV |
 
-    DrawBorder( 0, 12,  3, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder( 5, 12, 19, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder(20, 12, 34, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder(35, 12, 49, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder(50, 12, 64, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder(65, 12, 79, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawBorder( 0, 10,  3, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawBorder( 5, 10, 19, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawBorder(20, 10, 34, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawBorder(35, 10, 49, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawBorder(50, 10, 64, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawBorder(65, 10, 79, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
 
-    FillRectangle(4, 12, 4, 48, ' ', (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    FillRectangle(4, 10, 4, 48, ' ', (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
 
     // Focus row
-    FillRectangle(0, 30, width - 1, 30, ' ', (Colors::DarkRoyalPurple << 4) | Colors::White, width);
+    FillRectangle(0, 29, width - 1, 29, ' ', (Colors::DarkRoyalPurple << 4) | Colors::White, width);
 
     // Song info
     DrawBorder(7, 1, 28, 4, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
     FillRectangle(8, 2, 27, 3, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, width);
 
     // VU meters
-    DrawBorder(62, 5, 79, 11, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    FillRectangle(63, 6, 78, 10, 0xFB, (Colors::DarkerRoyalPurple << 4) | Colors::Black, width);
+    DrawBorder(62, 2, 79, 8, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    FillRectangle(63, 3, 78, 7, 0xFB, (Colors::DarkerRoyalPurple << 4) | Colors::Black, width);
 
     // Sample names
-    DrawBorder(34, 5, 57, 11, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    FillRectangle(35, 6, 56, 10, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, width);
+    DrawBorder(34, 2, 57, 8, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    FillRectangle(35, 3, 56, 7, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, width);
 
     // Panning
-    DrawBorder(58, 5, 61, 11, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    FillRectangle(59, 6, 60, 10, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::BabyBlue, width);
+    DrawBorder(58, 2, 61, 8, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    FillRectangle(59, 3, 60, 7, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::BabyBlue, width);
 
     // Progress box
-    DrawBorder(0, 9, 33, 11, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    FillRectangle(1, 10, 32, 10, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::BabyBlue, width);
+    DrawBorder(0, 6, 33, 8, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    FillRectangle(1, 7, 32, 7, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::BabyBlue, width);
 
     // Write static text to screen.
     WriteString("Test player 0.1 beta", 0, 0);
@@ -564,10 +574,10 @@ void WriteStatic()
     WriteString("bpm:", 8, 3, (Colors::DarkerRoyalPurple << 4) | Colors::DarkGrey);
     WriteString("speed:", 16, 3, (Colors::DarkerRoyalPurple << 4) | Colors::DarkGrey);
 
-    WriteString("Progress", 1, 8, (Colors::DarkRoyalPurple << 4) | Colors::White);
-    WriteString("Samples", 35, 4, (Colors::DarkRoyalPurple << 4) | Colors::White);
-    WriteString("Bal", 59, 4, (Colors::DarkRoyalPurple << 4) | Colors::White);
-    WriteString("Volume", 63, 4, (Colors::DarkRoyalPurple << 4) | Colors::White);
+    WriteString("Progress", 1, 5, (Colors::DarkRoyalPurple << 4) | Colors::White);
+    WriteString("Samples", 35, 1, (Colors::DarkRoyalPurple << 4) | Colors::White);
+    WriteString("Bal", 59, 1, (Colors::DarkRoyalPurple << 4) | Colors::White);
+    WriteString("Volume", 63, 1, (Colors::DarkRoyalPurple << 4) | Colors::White);
 
     WriteString(s_Mod->GetName(), 8, 2, (Colors::DarkerRoyalPurple << 4) | Colors::Cream);
 
@@ -700,16 +710,16 @@ void WriteTick0()
     Mod::Note* currentPattern = s_Mod->GetPattern(patternIndex);
 
     uint8_t* screenPtr = FARPointer(0xB800, 0x0000).ToPointer<uint8_t>();
-    int16_t screenStartRow = 17 - int16_t(currentRowIndex);
+    int16_t screenStartRow = 18 - int16_t(currentRowIndex);
     uint8_t dataStartRow = 0;
     if (screenStartRow < 0)
     {
         dataStartRow = abs(screenStartRow);
         screenStartRow = 0;
     }
-    uint8_t rowCount = min(64 - dataStartRow, 35 - screenStartRow);
-    screenStartRow += 13;
-    for (uint16_t clearRow = 13; clearRow < screenStartRow; ++clearRow)
+    uint8_t rowCount = min(64 - dataStartRow, 37 - screenStartRow);
+    screenStartRow += 11;
+    for (uint16_t clearRow = 11; clearRow < screenStartRow; ++clearRow)
     {
         uint8_t* rowPtr = screenPtr + 160 * clearRow;
         ClearRow(rowPtr);
@@ -719,7 +729,7 @@ void WriteTick0()
     {
         Mod::Note* currentRow = currentPattern + (dataStartRow + row) * s_Mod->GetChannelCount();
         uint8_t* rowPtr = screenPtr + 160 * (screenStartRow + row);
-        WriteRow(rowPtr, currentRow, dataStartRow + row, (screenStartRow + row) == 30);
+        WriteRow(rowPtr, currentRow, dataStartRow + row, (screenStartRow + row) == 29);
     }
     for (uint16_t clearRow = screenStartRow + rowCount; clearRow < 48; ++clearRow)
     {
@@ -736,14 +746,14 @@ void WriteTick0()
     }
 
     //Sample box
-    FillRectangle(35, 6, 56, 10, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, 80);
+    FillRectangle(35, 3, 56, 7, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, 80);
 
     for (uint8_t channel = 0; channel < min<uint8_t>(s_Mod->GetChannelCount(), 5); ++channel)
     {
         uint8_t sample = s_Player->GetChannelSample(channel);
         if (sample != 0)
         {
-            WriteString(s_Mod->GetSampleName(sample - 1), 35, 6 + channel);
+            WriteString(s_Mod->GetSampleName(sample - 1), 35, 3 + channel);
         }
     }
 
@@ -753,29 +763,29 @@ void WriteTick0()
         uint8_t pan = s_Player->GetChannelBalance(channel);
         if (pan < 0x08)
         {
-            screenPtr[160 * 6 + 118 + channel * 160 + 0] = 0xC0 + pan;
-            screenPtr[160 * 6 + 120 + channel * 160 + 0] = 0xC0 + 8;
+            screenPtr[160 * 3 + 118 + channel * 160 + 0] = 0xC0 + pan;
+            screenPtr[160 * 3 + 120 + channel * 160 + 0] = 0xC0 + 8;
         }
         else
         {
-            screenPtr[160 * 6 + 118 + channel * 160 + 0] = 0xC0 + 8;
-            screenPtr[160 * 6 + 120 + channel * 160 + 0] = 0xC0 + (pan & 0x07);
+            screenPtr[160 * 3 + 118 + channel * 160 + 0] = 0xC0 + 8;
+            screenPtr[160 * 3 + 120 + channel * 160 + 0] = 0xC0 + (pan & 0x07);
         }
     }
 
     //Progress box
-    FillRectangle(1, 10, 32, 10, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::BabyBlue, 80);
+    FillRectangle(1, 7, 32, 7, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::BabyBlue, 80);
 
     uint32_t progress = (((currentOrderIndex << 6) + currentRowIndex) * 32 * 8) / (s_Mod->GetOrderCount() << 6);
     for (uint16_t i = 0; i < (progress >> 3); ++i)
     {
-        screenPtr[160 * 10 + 2 + i*2 + 0] = 0xEF;
+        screenPtr[160 * 7 + 2 + i*2 + 0] = 0xEF;
     }
 
     uint8_t subProgress = (progress & 0x07);
     if (subProgress != 0)
     {
-        screenPtr[160 * 10 + 2 + (progress >> 3)*2 + 0] = 0xE7 + subProgress;
+        screenPtr[160 * 7 + 2 + (progress >> 3)*2 + 0] = 0xE7 + subProgress;
     }
 }
 
@@ -807,7 +817,7 @@ void WriteTickX()
     // Update the high frequency stuff.
     for (uint8_t channel = 0; channel < 5; ++channel)
     {
-        uint8_t* vuPtr = screenPtr + 160 * 6 + 126 + channel * 160;
+        uint8_t* vuPtr = screenPtr + 160 * 3 + 126 + channel * 160;
         for (uint8_t vol = 0; vol < 16; ++vol)
         {
             vuPtr[(vol << 1) + 0] = 0xFB;
@@ -817,14 +827,14 @@ void WriteTickX()
         for (uint8_t vol = 0; vol < (channelVolumes[channel] >> 2); ++vol)
         {
             vuPtr[(vol << 1) + 0] = 0xFE;
-            vuPtr[(vol << 1) + 1] = vuColors[vol];
+            vuPtr[(vol << 1) + 1] = s_Player->IsChannelMuted(channel) ? ((Colors::DarkerRoyalPurple << 4) | Colors::Grey) : vuColors[vol];
         }
         uint8_t partialVol = channelVolumes[channel] & 0x03;
         if (partialVol)
         {
             uint8_t vol = channelVolumes[channel] >> 2;
             vuPtr[(vol << 1) + 0] = 0xFB + partialVol;
-            vuPtr[(vol << 1) + 1] = vuColors[vol];
+            vuPtr[(vol << 1) + 1] = s_Player->IsChannelMuted(channel) ? ((Colors::DarkerRoyalPurple << 4) | Colors::Grey) : vuColors[vol];
         }
         channelVolumes[channel] = max<int8_t>(channelVolumes[channel] - 1, 0);
     }
@@ -837,6 +847,7 @@ void Handler()
 
 int main(int argc, const char** argv)
 {
+    __djgpp_nearptr_enable();
     using namespace Hag;
     using namespace Ham::File;
     using namespace Has::System;
@@ -856,11 +867,21 @@ int main(int argc, const char** argv)
 
     if (s_Mod == nullptr)
     {
-        printf("Error loading mod file.\n");
         return -1;
     }
-    VGA::ModeSetting::Initialize(allocator);
-    SetupScreen();
+
+    LOG("Test", "Initializing VGA driver");
+    if (!VGA::ModeSetting::Initialize(allocator))
+    {
+        LOG("Test", "VGA failed to initialize");
+    }
+
+    if (!SetupScreen())
+    {
+        LOG("Test", "Failed to set up screen");
+        return -1;
+    }
+
     WriteStatic();
 
     auto result = Function::System::Initialize(allocator);
@@ -884,6 +905,26 @@ int main(int argc, const char** argv)
 
     //Function::System::SetTimer1Handler(Handler, 50);
 
+    volatile bool Pause = false;
+    volatile bool Quit = false;
+    volatile bool Mute1 = false;
+    volatile bool Mute2 = false;
+    volatile bool Mute3 = false;
+    volatile bool Mute4 = false;
+
+    KB::SetScanCodeHandler([&](KB::ScanCode_t scanCode)
+    {
+        Mute1 = Mute1 | (scanCode == KB::ScanCodeSet1::One);
+        Mute2 = Mute2 | (scanCode == KB::ScanCodeSet1::Two);
+        Mute3 = Mute3 | (scanCode == KB::ScanCodeSet1::Three);
+        Mute4 = Mute4 | (scanCode == KB::ScanCodeSet1::Four);
+        Pause = Pause | (scanCode == KB::ScanCodeSet1::Pause);
+        Pause = Pause | (scanCode == KB::ScanCodeSet1::Spacebar);
+        Quit = Quit | (scanCode == KB::ScanCodeSet1::Escape);
+    });
+
+    KB::InstallKeyboardHandler();
+
     //TODO: would very much prefer to use the GUS timers, but I can't seem to get those interrupts to fire. :(
     InterruptTable::ChainHandler(8, Handler);
     SYS_ClearInterrupts();
@@ -900,6 +941,34 @@ int main(int argc, const char** argv)
 
     do
     {
+        if (Mute1)
+        {
+            s_Player->ToggleChannelMute(0);
+            Mute1 = false;
+        }
+        if (Mute2)
+        {
+            s_Player->ToggleChannelMute(1);
+            Mute2 = false;
+        }
+        if (Mute3)
+        {
+            s_Player->ToggleChannelMute(2);
+            Mute3 = false;
+        }
+        if (Mute4)
+        {
+            s_Player->ToggleChannelMute(3);
+            Mute4 = false;
+        }
+        if (Pause)
+        {
+            if (s_Player->IsPaused())
+                s_Player->Resume();
+            else
+                s_Player->Pause();
+            Pause = false;
+        }
         if (row != s_Player->GetCurrentRow())
         {
             WriteTick0();
@@ -910,13 +979,15 @@ int main(int argc, const char** argv)
             WriteTickX();
             tick = s_Player->GetCurrentTick();
         }
-    } while (!kbhit());
+    } while (!Quit);
 
     s_Player->Stop();
 
-    Function::System::Shutdown();
+    KB::RemoveKeyboardHandler();
 
     InterruptTable::UnchainHandler(8);
+
+    Function::System::Shutdown();
 
     SYS_ClearInterrupts();
     PIT::Command::Write(PIT::Command::ModeSquareWaveGenerator | PIT::Command::LowByteHighByte | PIT::Command::SelectChannel0);

@@ -522,7 +522,7 @@ void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, 
         interruptControl |= midiInterruptLatch;
     }
 
-	if ((playDma == recordDma) && (playDma != 0))
+    if ((playDma == recordDma) && (playDma != 0))
     {
         dmaControl |= GF1::DmaControl::CombineDma;
         LOG("Gravis", "Dma channels for GF1 and Midi are shared");

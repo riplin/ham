@@ -35,6 +35,8 @@ namespace Page
     inline void Write(Register_t baseAddress, Page_t value)
     {
         SYS_WritePortByte(baseAddress + Register::Page, value);
+        SYS_WritePortByte(baseAddress + Register::Page, value);
+        SYS_WritePortByte(baseAddress + Register::Page, value);
     }
 
 }

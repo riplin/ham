@@ -139,12 +139,18 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
     FileStream stream(fileName, FileStreamMode::Read);
 
     if (!stream.IsOpen())
+    {
+        LOG("Mod", "Failed to open file: %s", fileName);
         return nullptr;
+    }
 
     uint8_t channels = LoadChannelCount(stream);
 
     if (channels == 0)
+    {
+        LOG("Mod", "File not detected as MOD");
         return nullptr;
+    }
 
     Mod* mod = Mod::Create(allocator);
 
@@ -152,6 +158,7 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
 
     if (!stream.Read(sizeof(mod->m_Name) - 1, mod->m_Name))
     {
+        LOG("Mod", "Error reading name from file");
         Mod::Destroy(mod);
         return nullptr;
     }
@@ -165,6 +172,7 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
         //Read name
         if (!stream.Read(sizeof(mod->m_Samples[i].Name) - 1, mod->m_Samples[i].Name))
         {
+            LOG("Mod", "Error reading sample name from file");
             Mod::Destroy(mod);
             return nullptr;
         }
@@ -174,6 +182,7 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
 
         if (!ReadWord(stream, mod->m_Samples[i].Length))
         {
+            LOG("Mod", "Error reading sample length from file");
             Mod::Destroy(mod);
             return nullptr;
         }
@@ -181,6 +190,7 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
         int8_t fineTune = 0;
         if (!stream.Read(sizeof(fineTune), &fineTune))
         {
+            LOG("Mod", "Error reading sample fine tune from file");
             Mod::Destroy(mod);
             return nullptr;
         }
@@ -189,18 +199,21 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
         
         if (!stream.Read(sizeof(mod->m_Samples[i].Volume), &mod->m_Samples[i].Volume))
         {
+            LOG("Mod", "Error reading sample volume from file");
             Mod::Destroy(mod);
             return nullptr;
         }
 
         if (!ReadWord(stream, mod->m_Samples[i].LoopStart))
         {
+            LOG("Mod", "Error reading sample loop start from file");
             Mod::Destroy(mod);
             return nullptr;
         }
 
         if (!ReadWord(stream, mod->m_Samples[i].LoopEnd))
         {
+            LOG("Mod", "Error reading sample loop end from file");
             Mod::Destroy(mod);
             return nullptr;
         }
@@ -219,6 +232,7 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
 
     if (!stream.Read(sizeof(mod->m_OrderCount), &mod->m_OrderCount))
     {
+        LOG("Mod", "Error reading order count from file");
         Mod::Destroy(mod);
         return nullptr;
     }
@@ -228,6 +242,7 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
 
     if (!stream.Read(sizeof(mod->m_Orders), &mod->m_Orders))
     {
+        LOG("Mod", "Error reading order list from file");
         Mod::Destroy(mod);
         return nullptr;
     }
@@ -253,6 +268,7 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
         {
             if (!stream.Read(4, data))
             {
+                LOG("Mod", "Error pattern note %i from pattern %i", j, i);
                 Mod::Destroy(mod);
                 return nullptr;
             }
@@ -280,6 +296,7 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
             mod->m_Samples[i].Data = allocator.AllocateAs<uint8_t>(length + 1);
             if (!stream.Read(length, mod->m_Samples[i].Data))
             {
+                LOG("Mod", "Error reading sample %i data with length %i", i, length);
                 Mod::Destroy(mod);
                 return nullptr;
             }
@@ -302,6 +319,8 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
     }
 
     stream.Close();
+
+    LOG("Mod", "Successfully loaded: %s", fileName);
     return mod;
 }
 
