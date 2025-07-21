@@ -13,6 +13,7 @@ add_compile_options(-Wall -std=c++23 -save-temps -U __STRICT_ANSI__ -Wno-array-b
 # -march=pentium3 -msse
 
 link_directories(../has/build)
+link_directories(../hag/build)
 
 add_compile_options(
     "$<$<CONFIG:RELEASE>:-DRELEASE>"
@@ -37,6 +38,7 @@ message("Environment variable DXE_LD_LIBRARY_PATH: $ENV{DXE_LD_LIBRARY_PATH}")
 
 include_directories(
     ../has/include
+    ../hag/include
     include
     )
 
@@ -59,3 +61,9 @@ target_link_libraries(test debug hassupd)
 target_link_libraries(test debug hasd)
 target_link_libraries(test optimized hassup)
 target_link_libraries(test optimized has)
+target_link_libraries(test debug vgad)
+target_link_libraries(test debug hagsupd)
+target_link_libraries(test debug hagd)
+target_link_libraries(test optimized vga)
+target_link_libraries(test optimized hagsup)
+target_link_libraries(test optimized hag)

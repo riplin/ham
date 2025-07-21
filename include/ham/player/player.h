@@ -49,8 +49,10 @@ public:
     inline uint8_t GetCurrentRow() const { return m_CurrentRow; }
     inline uint8_t GetCurrentOrderIndex() const { return m_CurrentOrderIndex; }
 
+    inline uint8_t GetChannelSample(uint8_t channel) const { return m_Channels[channel].Sample; }
     inline uint8_t GetChannelVolume(uint8_t channel) const { return m_Channels[channel].Volume; }
     inline uint16_t GetChannelPeriod(uint8_t channel) const { return m_Channels[channel].Period; }
+    inline uint8_t GetChannelBalance(uint8_t channel) const { return m_Channels[channel].Balance; }
 private:
 
     void Reset();
