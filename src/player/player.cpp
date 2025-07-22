@@ -145,11 +145,13 @@ void Player::Reset()
         m_Channels[i].Period = 0;
         m_Channels[i].PortaTarget = 0;
         m_Channels[i].Volume = 0;
+        m_Channels[i].VolumeTarget = 0;
+        m_Channels[i].VolumeDelta = 0;
         m_Channels[i].Note = 0;
         m_Channels[i].PortaSpeed = 0;
         m_Channels[i].SampleOffset = 0;
         m_Channels[i].FineTune = 0;
-        m_Channels[i].Balance = ((i & 1) == 0) ? 0x00 : 0x0F;//L, R, L, R, ...
+        m_Channels[i].Balance = ((i & 1) == 0) ? 0x03 : 0x0C;//L, R, L, R, ...
         m_Channels[i].Parameter = 0;
         m_Channels[i].Sample = 0;
         m_Channels[i].LoopTarget = 0;
@@ -223,7 +225,7 @@ void Player::HandleTick0(uint8_t channel)
         return;
 
     //property dirty flags:
-    bool volumeDirty = false;
+    bool sampleDirty = false;
     bool panDirty = false;
     bool periodDirty = false;
 
@@ -231,8 +233,7 @@ void Player::HandleTick0(uint8_t channel)
     {
         m_Channels[channel].Sample = currentNote->Sample;
         m_Channels[channel].FineTune = m_Module->GetSampleFineTune(m_Channels[channel].Sample - 1);
-        m_Channels[channel].Volume = m_Module->GetSampleVolume(m_Channels[channel].Sample - 1);
-        volumeDirty = true;
+        m_Channels[channel].VolumeTarget = m_Module->GetSampleVolume(m_Channels[channel].Sample - 1);
     }
 
     if (currentNote->Parameter != 0x00)
@@ -258,6 +259,7 @@ void Player::HandleTick0(uint8_t channel)
         if ((currentNote->Effect != Mod::Effect::PortamentoToNote) && (currentNote->Effect != Mod::Effect::PortamentoAndVolumeSlide))
         {
             m_Channels[channel].Period = correctPeriod;
+            sampleDirty = true;
             periodDirty = true;
         }
     }
@@ -318,8 +320,7 @@ void Player::HandleTick0(uint8_t channel)
                 m_NextOrderIndex = 0;
             break;
         case Mod::Effect::SetVolume:// 5.13 Effect Cxy (Set Volume)
-            m_Channels[channel].Volume = min<uint8_t>(currentNote->Parameter, 0x40);
-            volumeDirty = true;
+            m_Channels[channel].VolumeTarget = min<uint8_t>(currentNote->Parameter, 0x40);
             break;
         case Mod::Effect::PatternBreak:// 5.14 Effect Dxy (Pattern Break)
             m_NextOrderIndex = m_CurrentOrderIndex + 1;
@@ -392,12 +393,10 @@ void Player::HandleTick0(uint8_t channel)
                 panDirty = true;
                 break;
             case Mod::SubEffect::FineVolumeSlideUp:// 5.26 Effect EAx (Fine Volume Slide Up)
-                m_Channels[channel].Volume += currentNote->Parameter & 0x0F;
-                volumeDirty = true;
+                m_Channels[channel].VolumeTarget += currentNote->Parameter & 0x0F;
                 break;
             case Mod::SubEffect::FineVolumeSlideDown:// 5.27 Effect EBx (Fine Volume Slide Down)
-                m_Channels[channel].Volume += currentNote->Parameter & 0x0F;
-                volumeDirty = true;
+                m_Channels[channel].VolumeTarget += currentNote->Parameter & 0x0F;
                 break;
             case Mod::SubEffect::PatternDelay:// 5.30 Effect EEx (Pattern Delay)
                 m_PatternDelay = currentNote->Parameter & 0x0F;
@@ -414,6 +413,11 @@ void Player::HandleTick0(uint8_t channel)
         }
     }
 
+    if (sampleDirty)
+    {
+        Function::System::StopVoice(channel);
+    }
+
     //Apply channel changes.
     if (periodDirty && (m_Channels[channel].Period > 0))
     {
@@ -421,19 +425,12 @@ void Player::HandleTick0(uint8_t channel)
         Function::System::SetPlaybackFrequency(channel, frequency, m_Module->GetChannelCount());
     }
 
-    if (volumeDirty)
-    {
-        m_Channels[channel].Volume = min<int16_t>(max<int16_t>(0, m_Channels[channel].Volume), 64);
-        if (m_Channels[channel].Mute)
-            Function::System::SetVolume(channel, s_Volume[0]);
-        else
-            Function::System::SetVolume(channel, s_Volume[m_Channels[channel].Volume]);
-    }
+    ProcessVolume(channel, 0);
 
     if (panDirty)
         Function::System::SetPan(channel, m_Channels[channel].Balance);
 
-    if (currentNote->Note != 0xffff)
+    if (sampleDirty)
     {
         GF1::Voice::VoiceControl_t voiceControl = GF1::Voice::VoiceControl::Bits8 |
                                                 GF1::Voice::VoiceControl::Forward |
@@ -444,6 +441,24 @@ void Player::HandleTick0(uint8_t channel)
 
         Function::System::PlayVoice(channel, m_Channels[channel].SampleBegin, m_Channels[channel].SampleLoopStart, m_Channels[channel].SampleLoopEnd, voiceControl);
     }
+}
+
+int16_t Player::ProcessArpeggio(uint8_t channel, uint8_t parameter)
+{
+    int16_t delta = 0;
+    switch (m_CurrentTick % 3)
+    {
+    case 0:
+        //base note.
+        break;
+    case 1:
+        delta = m_Module->GetPeriod(m_Channels[channel].Note + (parameter >> 4), m_Channels[channel].FineTune) - m_Channels[channel].Period;
+        break;
+    case 2:
+        delta = m_Module->GetPeriod(m_Channels[channel].Note + (parameter & 0x0F), m_Channels[channel].FineTune) - m_Channels[channel].Period;
+        break;
+    }
+    return delta;
 }
 
 bool Player::ProcessPortamentoToNote(uint8_t channel)
@@ -467,22 +482,18 @@ bool Player::ProcessPortamentoToNote(uint8_t channel)
     return periodDirty;
 }
 
-bool Player::ProcessVolumeSlide(uint8_t channel, uint8_t parameter)
+void Player::ProcessVolumeSlide(uint8_t channel, uint8_t parameter)
 {
-    bool volumeDirty = false;
     if (((parameter & 0xF0) != 0) && ((parameter & 0x0F) == 0))
     {
         //up
-        m_Channels[channel].Volume += (parameter & 0xF0) >> 4;
-        volumeDirty = true;
+        m_Channels[channel].VolumeTarget += (parameter & 0xF0) >> 4;
     }
     else if (((parameter & 0x0F) != 0) && ((parameter & 0xF0) == 0))
     {
         //down
-        m_Channels[channel].Volume -= parameter & 0x0F;
-        volumeDirty = true;
+        m_Channels[channel].VolumeTarget -= parameter & 0x0F;
     }
-    return volumeDirty;
 }
 
 int16_t Player::ProcessVibrato(uint8_t channel)
@@ -561,6 +572,33 @@ int16_t Player::ProcessTremolo(uint8_t channel)
     return delta;
 }
 
+void Player::ProcessVolume(uint8_t channel, int16_t volumeDelta)
+{
+    using namespace Has;
+    using namespace Ham::Gravis::Shared;
+
+    if ((m_Channels[channel].Volume + m_Channels[channel].VolumeDelta) != (m_Channels[channel].VolumeTarget + volumeDelta))
+    {
+        m_Channels[channel].VolumeTarget = min<int16_t>(max<int16_t>(0, m_Channels[channel].VolumeTarget), 64);
+        
+        int16_t toVolume = min<int16_t>(max<int16_t>(0, m_Channels[channel].VolumeTarget + volumeDelta), 64);
+
+        //TODO: Was for ramping, but that doesn't sound right...
+        //int16_t fromVolume = min<int16_t>(max<int16_t>(0, m_Channels[channel].Volume + m_Channels[channel].VolumeDelta), 64);
+
+        if (m_Channels[channel].Mute)
+        {
+            Function::System::SetVolume(channel, s_Volume[0]);
+        }
+        else
+        {
+            Function::System::SetVolume(channel, s_Volume[toVolume]);
+            m_Channels[channel].Volume = m_Channels[channel].VolumeTarget;
+            m_Channels[channel].VolumeDelta = volumeDelta;
+        }
+    }
+}
+
 void Player::HandleTickX(uint8_t channel)
 {
     using namespace Has;
@@ -573,7 +611,6 @@ void Player::HandleTickX(uint8_t channel)
     Mod::Note* currentNote = currentRow + channel;
 
     //property dirty flags:
-    bool volumeDirty = false;
     bool periodDirty = false;
     int16_t periodDelta = 0;
     int16_t volumeDelta = 0;
@@ -581,6 +618,8 @@ void Player::HandleTickX(uint8_t channel)
     switch(currentNote->Effect)
     {
     case Mod::Effect::Arpeggio:// 5.1 Effect 0xy (Arpeggio)
+        periodDelta = ProcessArpeggio(channel, currentNote->Parameter);
+        periodDirty = true;
         break;
     case Mod::Effect::PortamentoUp:// 5.2 Effect 1xy (Porta Up)
         m_Channels[channel].Period = max<int16_t>(m_Channels[channel].Period - int16_t(currentNote->Parameter), 56);//TODO don't harcode this!
@@ -598,20 +637,19 @@ void Player::HandleTickX(uint8_t channel)
         periodDirty = true;
         break;
     case Mod::Effect::PortamentoAndVolumeSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
-        volumeDirty = ProcessVolumeSlide(channel, currentNote->Parameter);
+        ProcessVolumeSlide(channel, currentNote->Parameter);
         periodDirty = ProcessPortamentoToNote(channel);
         break;
     case Mod::Effect::VibratoAndVolumeSlide:// 5.7 Effect 6xy (Vibrato + Vol Slide)
-        volumeDirty = ProcessVolumeSlide(channel, currentNote->Parameter);
+        ProcessVolumeSlide(channel, currentNote->Parameter);
         periodDelta = ProcessVibrato(channel);
         periodDirty = true;
         break;
     case Mod::Effect::Tremolo:// 5.8 Effect 7xy (Tremolo)
         volumeDelta = ProcessTremolo(channel);
-        volumeDirty = true;
         break;
     case Mod::Effect::VolumeSlide:// 5.11 Effect Axy (Volume Slide)
-        volumeDirty = ProcessVolumeSlide(channel, currentNote->Parameter);
+        ProcessVolumeSlide(channel, currentNote->Parameter);
         break;
     case Mod::Effect::MoreEffects://Sub-effects
         switch (currentNote->Parameter & Mod::SubEffect::Mask)
@@ -633,8 +671,7 @@ void Player::HandleTickX(uint8_t channel)
             }
             break;
         case Mod::SubEffect::CutNote:// 5.28 Effect ECx (Cut Note)
-            if (m_CurrentTick == (currentNote->Parameter & 0x0F)) m_Channels[channel].Volume = 0;
-            volumeDirty = true;
+            if (m_CurrentTick == (currentNote->Parameter & 0x0F)) m_Channels[channel].VolumeTarget = 0;
             break;
         case Mod::SubEffect::DelayNote:// 5.29 Effect EDx (Delay Note)
             if (m_CurrentTick == (currentNote->Parameter & 0x0F)) HandleTick0(channel); // Now we trigger the note.
@@ -654,15 +691,7 @@ void Player::HandleTickX(uint8_t channel)
         Function::System::SetPlaybackFrequency(channel, frequency, m_Module->GetChannelCount());
     }
 
-    if (volumeDirty)
-    {
-        m_Channels[channel].Volume = min<int16_t>(max<int16_t>(0, m_Channels[channel].Volume + volumeDelta), 64);
-        if (m_Channels[channel].Mute)
-            Function::System::SetVolume(channel, s_Volume[0]);
-        else
-            Function::System::SetVolume(channel, s_Volume[m_Channels[channel].Volume]);
-    }
-
+    ProcessVolume(channel, volumeDelta);
 }
 
 uint16_t Player::s_Volume[65] =

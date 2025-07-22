@@ -62,299 +62,395 @@ namespace Colors
     };
 };
 
-uint8_t borderCharacterGlyphs[] =
+namespace Border
 {
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b11111100,
-    0b11111000,
-    0b11110000,
-    0b11110000,
-    
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000011,
-    0b00000111,
-    0b00001111,
-    0b00001111,
-    
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b00111111,
-    0b00011111,
-    0b00001111,
-    0b00001111,
+    uint8_t Glyphs[] =
+    {
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111100,
+        0b11111000,
+        0b11110000,
+        0b11110000,
+        
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000011,
+        0b00000111,
+        0b00001111,
+        0b00001111,
+        
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b00111111,
+        0b00011111,
+        0b00001111,
+        0b00001111,
 
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b11000000,
-    0b11100000,
-    0b11110000,
-    0b11110000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b11000000,
+        0b11100000,
+        0b11110000,
+        0b11110000,
 
-    0b11110000,
-    0b11110000,
-    0b11111000,
-    0b11111100,
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b11111111,
+        0b11110000,
+        0b11110000,
+        0b11111000,
+        0b11111100,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
 
-    0b00001111,
-    0b00001111,
-    0b00000111,
-    0b00000011,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
+        0b00001111,
+        0b00001111,
+        0b00000111,
+        0b00000011,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
 
-    0b00001111,
-    0b00001111,
-    0b00011111,
-    0b00111111,
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b11111111,
+        0b00001111,
+        0b00001111,
+        0b00011111,
+        0b00111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
 
-    0b11110000,
-    0b11110000,
-    0b11100000,
-    0b11000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000
-};
+        0b11110000,
+        0b11110000,
+        0b11100000,
+        0b11000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000
+    };
 
-uint8_t vuMeterGlyphs[] =
+    enum
+    {
+        Index = 0xD3,
+
+        TopLeft =               Index + 0x00,
+        TopLeftNegative =       Index + 0x01,
+        TopRight =              Index + 0x02,
+        TopRightNegative =      Index + 0x03,
+        BottomLeft =            Index + 0x04,
+        BottomLeftNegative =    Index + 0x05,
+        BottomRight =           Index + 0x06,
+        BottomRightNegative =   Index + 0x07,
+
+        //Already defined in ASCII table
+        Top =                   0xDF,
+        TopNegative =           0xDC,
+        Bottom =                0xDC,
+        BottomNegative =        0xDF,
+        Left =                  0xDD,
+        LeftNegative =          0xDE,
+        Right =                 0xDE,
+        RightNegative =         0xDD,
+
+        Count = sizeof(Glyphs) / (8 * sizeof(uint8_t))
+    };
+}
+
+namespace VuMeter
 {
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00011000,
-    0b00011000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
+    uint8_t Glyphs[] =
+    {
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00011000,
+        0b00011000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
 
-    0b00000000,
-    0b00000000,
-    0b00011000,
-    0b00111100,
-    0b00111100,
-    0b00011000,
-    0b00000000,
-    0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00011000,
+        0b00111100,
+        0b00111100,
+        0b00011000,
+        0b00000000,
+        0b00000000,
 
-    0b00000000,
-    0b00000000,
-    0b00111100,
-    0b01111110,
-    0b01111110,
-    0b00111100,
-    0b00000000,
-    0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00111100,
+        0b01111110,
+        0b01111110,
+        0b00111100,
+        0b00000000,
+        0b00000000,
 
-    0b00000000,
-    0b00111100,
-    0b01111110,
-    0b11111111,
-    0b11111111,
-    0b01111110,
-    0b00111100,
-    0b00000000
-};
+        0b00000000,
+        0b00111100,
+        0b01111110,
+        0b11111111,
+        0b11111111,
+        0b01111110,
+        0b00111100,
+        0b00000000
+    };
 
-uint8_t patternGlyphs[] =
+    enum
+    {
+        Index = 0xFB,
+
+        Smaller =       Index + 0x00,
+        Small =         Index + 0x01,
+        Medium =        Index + 0x02,
+        Large =         Index + 0x03,
+
+        Count = sizeof(Glyphs) / (8 * sizeof(uint8_t))
+    };
+}
+
+namespace Pattern
 {
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b01100110,
-    0b00000000,
+    uint8_t Glyphs[] =
+    {
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b01100110,
+        0b00000000,
 
-    0b00000000,
-    0b00011000,
-    0b00000000,
-    0b00000000,
-    0b00011000,
-    0b00000000,
-    0b01100110,
-    0b00000000
-};
+        0b00000000,
+        0b00011000,
+        0b00000000,
+        0b00000000,
+        0b00011000,
+        0b00000000,
+        0b01100110,
+        0b00000000
+    };
 
-uint8_t panningGlyphs[] = 
+    enum
+    {
+        Index = 0xF6,
+
+        Dots = Index + 0x00,
+        ColonDots = Index + 0x01,
+
+        Count = sizeof(Glyphs) / (8 * sizeof(uint8_t))
+    };
+}
+
+namespace Panning
 {
-    0b00000000,
-    0b10000000,
-    0b10000000,
-    0b10000000,
-    0b10000000,
-    0b00000000,
-    0b10101010,
-    0b00000000,
+    uint8_t Glyphs[] = 
+    {
+        0b00000000,
+        0b00000000,
+        0b10000000,
+        0b10000000,
+        0b10000000,
+        0b10000000,
+        0b10101010,
+        0b00000000,
 
-    0b00000000,
-    0b01000000,
-    0b01000000,
-    0b01000000,
-    0b01000000,
-    0b00000000,
-    0b10101010,
-    0b00000000,
+        0b00000000,
+        0b00000000,
+        0b01000000,
+        0b01000000,
+        0b01000000,
+        0b01000000,
+        0b10101010,
+        0b00000000,
 
-    0b00000000,
-    0b00100000,
-    0b00100000,
-    0b00100000,
-    0b00100000,
-    0b00000000,
-    0b10101010,
-    0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00100000,
+        0b00100000,
+        0b00100000,
+        0b00100000,
+        0b10101010,
+        0b00000000,
 
-    0b00000000,
-    0b00010000,
-    0b00010000,
-    0b00010000,
-    0b00010000,
-    0b00000000,
-    0b10101010,
-    0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00010000,
+        0b00010000,
+        0b00010000,
+        0b00010000,
+        0b10101010,
+        0b00000000,
 
-    0b00000000,
-    0b00001000,
-    0b00001000,
-    0b00001000,
-    0b00001000,
-    0b00000000,
-    0b10101010,
-    0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001000,
+        0b00001000,
+        0b00001000,
+        0b00001000,
+        0b10101010,
+        0b00000000,
 
-    0b00000000,
-    0b00000100,
-    0b00000100,
-    0b00000100,
-    0b00000100,
-    0b00000000,
-    0b10101010,
-    0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000100,
+        0b00000100,
+        0b00000100,
+        0b00000100,
+        0b10101010,
+        0b00000000,
 
-    0b00000000,
-    0b00000010,
-    0b00000010,
-    0b00000010,
-    0b00000010,
-    0b00000000,
-    0b10101010,
-    0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000010,
+        0b00000010,
+        0b00000010,
+        0b00000010,
+        0b10101010,
+        0b00000000,
 
-    0b00000000,
-    0b00000001,
-    0b00000001,
-    0b00000001,
-    0b00000001,
-    0b00000000,
-    0b10101010,
-    0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b10101010,
+        0b00000000,
 
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b00000000,
-    0b10101010,
-    0b00000000,
-};
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b10101010,
+        0b00000000,
+    };
 
-uint8_t progressGlyphs[] =
+    enum
+    {
+        Index = 0xC0,
+
+        Pan0 = Index + 0x00,
+        Pan1 = Index + 0x01,
+        Pan2 = Index + 0x02,
+        Pan3 = Index + 0x03,
+        Pan4 = Index + 0x04,
+        Pan5 = Index + 0x05,
+        Pan6 = Index + 0x06,
+        Pan7 = Index + 0x07,
+        Empty = Index + 0x08,
+
+        Count = sizeof(Glyphs) / (8 * sizeof(uint8_t))
+    };
+}
+
+namespace Progress
 {
-    0b00000000,
-    0b10000000,
-    0b10000000,
-    0b10000000,
-    0b10000000,
-    0b10000000,
-    0b10000000,
-    0b00000000,
+    uint8_t Glyphs[] =
+    {
+        0b00000000,
+        0b10000000,
+        0b10000000,
+        0b10000000,
+        0b10000000,
+        0b10000000,
+        0b10000000,
+        0b00000000,
 
-    0b00000000,
-    0b11000000,
-    0b11000000,
-    0b11000000,
-    0b11000000,
-    0b11000000,
-    0b11000000,
-    0b00000000,
+        0b00000000,
+        0b11000000,
+        0b11000000,
+        0b11000000,
+        0b11000000,
+        0b11000000,
+        0b11000000,
+        0b00000000,
 
-    0b00000000,
-    0b11100000,
-    0b11100000,
-    0b11100000,
-    0b11100000,
-    0b11100000,
-    0b11100000,
-    0b00000000,
+        0b00000000,
+        0b11100000,
+        0b11100000,
+        0b11100000,
+        0b11100000,
+        0b11100000,
+        0b11100000,
+        0b00000000,
 
-    0b00000000,
-    0b11110000,
-    0b11110000,
-    0b11110000,
-    0b11110000,
-    0b11110000,
-    0b11110000,
-    0b00000000,
+        0b00000000,
+        0b11110000,
+        0b11110000,
+        0b11110000,
+        0b11110000,
+        0b11110000,
+        0b11110000,
+        0b00000000,
 
-    0b00000000,
-    0b11111000,
-    0b11111000,
-    0b11111000,
-    0b11111000,
-    0b11111000,
-    0b11111000,
-    0b00000000,
+        0b00000000,
+        0b11111000,
+        0b11111000,
+        0b11111000,
+        0b11111000,
+        0b11111000,
+        0b11111000,
+        0b00000000,
 
-    0b00000000,
-    0b11111100,
-    0b11111100,
-    0b11111100,
-    0b11111100,
-    0b11111100,
-    0b11111100,
-    0b00000000,
+        0b00000000,
+        0b11111100,
+        0b11111100,
+        0b11111100,
+        0b11111100,
+        0b11111100,
+        0b11111100,
+        0b00000000,
 
-    0b00000000,
-    0b11111110,
-    0b11111110,
-    0b11111110,
-    0b11111110,
-    0b11111110,
-    0b11111110,
-    0b00000000,
+        0b00000000,
+        0b11111110,
+        0b11111110,
+        0b11111110,
+        0b11111110,
+        0b11111110,
+        0b11111110,
+        0b00000000,
 
-    0b00000000,
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b11111111,
-    0b00000000,
-};
+        0b00000000,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b00000000,
+    };
+
+    enum
+    {
+        Index = 0xE8,
+
+        Step1 = Index + 0x00,
+        Step2 = Index + 0x01,
+        Step3 = Index + 0x02,
+        Step4 = Index + 0x03,
+        Step5 = Index + 0x04,
+        Step6 = Index + 0x05,
+        Step7 = Index + 0x06,
+        Step8 = Index + 0x07,
+
+        Count = sizeof(Glyphs) / (8 * sizeof(uint8_t))
+    };
+}
 
 bool SetupScreen()
 {
@@ -397,11 +493,11 @@ bool SetupScreen()
     VGA::AttributeControllerIndex::Write(VGA::AttributeControllerIndex::EnableVideoDisplay);
 
     // Font changes
-    VGA::ModeSetting::UploadCharacterGlyphs((sizeof(borderCharacterGlyphs) / (8 * sizeof(uint8_t))) - 1, borderCharacterGlyphs, 0xD3, 8, 0);
-    VGA::ModeSetting::UploadCharacterGlyphs((sizeof(vuMeterGlyphs) / (8 * sizeof(uint8_t))) - 1, vuMeterGlyphs, 0xFB, 8, 0);
-    VGA::ModeSetting::UploadCharacterGlyphs((sizeof(patternGlyphs) / (8 * sizeof(uint8_t))) - 1, patternGlyphs, 0xF6, 8, 0);
-    VGA::ModeSetting::UploadCharacterGlyphs((sizeof(progressGlyphs) / (8 * sizeof(uint8_t))) - 1, progressGlyphs, 0xE8, 8, 0);
-    VGA::ModeSetting::UploadCharacterGlyphs((sizeof(panningGlyphs) / (8 * sizeof(uint8_t))) - 1, panningGlyphs, 0xC0, 8, 0);
+    VGA::ModeSetting::UploadCharacterGlyphs(Border::Count - 1, Border::Glyphs, Border::Index, 8, 0);
+    VGA::ModeSetting::UploadCharacterGlyphs(VuMeter::Count - 1, VuMeter::Glyphs, VuMeter::Index, 8, 0);
+    VGA::ModeSetting::UploadCharacterGlyphs(Pattern::Count - 1, Pattern::Glyphs, Pattern::Index, 8, 0);
+    VGA::ModeSetting::UploadCharacterGlyphs(Panning::Count - 1, Panning::Glyphs, Panning::Index, 8, 0);
+    VGA::ModeSetting::UploadCharacterGlyphs(Progress::Count - 1, Progress::Glyphs, Progress::Index, 8, 0);
 
     // Turn screen back on.
     VGA::Sequencer::ClockingMode::Write(
@@ -449,36 +545,36 @@ void DrawBorder(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t colo
     bottomLeft += 2;
     for (uint16_t x = x0 + 1; x < x1; ++x)
     {
-        topLeft[0] = 0xDC;
+        topLeft[0] = Border::TopNegative;
         topLeft[1] = color;
-        bottomLeft[0] = 0xDF;
+        bottomLeft[0] = Border::BottomNegative;
         bottomLeft[1] = color;
 
         topLeft += 2;
         bottomLeft += 2;
     }
 
-    left[0] = 0xD4;
+    left[0] = Border::TopLeftNegative;
     left[1] = color;
     left += (screenWidth << 1);
 
-    right[0] = 0xD6;
+    right[0] = Border::TopRightNegative;
     right[1] = color;
     right += (screenWidth << 1);
 
     for (uint16_t y = y0 + 1; y < y1; ++y)
     {
-        left[0] = 0xDE;
+        left[0] = Border::LeftNegative;
         left[1] = color;
-        right[0] = 0xDD;
+        right[0] = Border::RightNegative;
         right[1] = color;
         left += (screenWidth << 1);
         right += (screenWidth << 1);
     }
 
-    left[0] = 0xD8;
+    left[0] = Border::BottomLeftNegative;
     left[1] = color;
-    right[0] = 0xDA;
+    right[0] = Border::BottomRightNegative;
     right[1] = color;
 }
 
@@ -552,7 +648,7 @@ void WriteStatic()
 
     // VU meters
     DrawBorder(62, 2, 79, 8, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    FillRectangle(63, 3, 78, 7, 0xFB, (Colors::DarkerRoyalPurple << 4) | Colors::Black, width);
+    FillRectangle(63, 3, 78, 7, VuMeter::Smaller, (Colors::DarkerRoyalPurple << 4) | Colors::Black, width);
 
     // Sample names
     DrawBorder(34, 2, 57, 8, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
@@ -581,6 +677,7 @@ void WriteStatic()
 
     WriteString(s_Mod->GetName(), 8, 2, (Colors::DarkerRoyalPurple << 4) | Colors::Cream);
 
+    WriteString("ESC/Q:Quit Space/P/Pause:Pause/Resume 1,2,3,4:Mute", 0, 49);
 }
 
 static const char* s_Hex = "0123456789ABCDEF";
@@ -593,22 +690,22 @@ void WriteRow(uint8_t* rowPtr, Ham::File::Mod::Note* currentNote, uint8_t curren
     uint8_t* channelPtr = rowPtr + 12;
     for (uint16_t channel = 0; channel < min<uint16_t>(5, s_Mod->GetChannelCount()); ++channel)
     {
-        uint8_t sample[2] = { 0xF6, 0xF6 };
+        uint8_t sample[2] = { Pattern::Dots, Pattern::Dots };
         if (currentNote[channel].Sample != 0)
         {
             sample[0] = s_Hex[currentNote[channel].Sample >> 4];
             sample[1] = s_Hex[currentNote[channel].Sample & 0x0F];
         }
 
-        static const uint8_t noteDefault[3] = { 0xF6, 0xF6, 0xF6 };
+        static const uint8_t noteDefault[3] = { Pattern::Dots, Pattern::Dots, Pattern::Dots };
         const uint8_t* noteName = noteDefault;
         if (currentNote[channel].Note != 0xFFFF)
         {
             noteName = (const uint8_t*)s_Mod->GetNoteName(currentNote[channel].Note);
         }
         
-        uint8_t effect = 0xF6;
-        uint8_t parameter[2] = { 0xF6, 0xF6 };
+        uint8_t effect = Pattern::Dots;
+        uint8_t parameter[2] = { Pattern::Dots, Pattern::Dots };
         if ((currentNote[channel].Effect != 0) || (currentNote[channel].Parameter != 0))
         {
             effect = s_Hex[currentNote[channel].Effect];
@@ -616,7 +713,7 @@ void WriteRow(uint8_t* rowPtr, Ham::File::Mod::Note* currentNote, uint8_t curren
             parameter[1] = s_Hex[currentNote[channel].Parameter & 0x0F];
         }
 
-        uint8_t vol[2] = { 0xF6, 0xF6 };
+        uint8_t vol[2] = { Pattern::Dots, Pattern::Dots };
         if (drawVolume)
         {
             uint8_t curVol = s_Player->GetChannelVolume(channel);
@@ -627,19 +724,19 @@ void WriteRow(uint8_t* rowPtr, Ham::File::Mod::Note* currentNote, uint8_t curren
         channelPtr[0] = sample[0];
         channelPtr[2] = sample[1];
 
-        channelPtr[4] = 0xF7;
+        channelPtr[4] = Pattern::ColonDots;
 
         channelPtr[6] = noteName[0];
         channelPtr[8] = noteName[1];
         channelPtr[10] = noteName[2];
 
-        channelPtr[12] = 0xF7;
+        channelPtr[12] = Pattern::ColonDots;
 
         channelPtr[14] = effect;
         channelPtr[16] = parameter[0];
         channelPtr[18] = parameter[1];
 
-        channelPtr[20] = 0xF7;
+        channelPtr[20] = Pattern::ColonDots;
 
         channelPtr[22] = vol[0];
         channelPtr[24] = vol[1];
@@ -652,24 +749,24 @@ void ClearRow(uint8_t* rowPtr)
 {
     using namespace Has;
 
-    rowPtr[2] = 0xF6;
-    rowPtr[4] = 0xF6;
+    rowPtr[2] = Pattern::Dots;
+    rowPtr[4] = Pattern::Dots;
     uint8_t* channelPtr = rowPtr + 12;
     for (uint16_t channel = 0; channel < min<uint16_t>(5, s_Mod->GetChannelCount()); ++channel)
     {
-        channelPtr[0] = 0xF6;
-        channelPtr[2] = 0xF6;
-        channelPtr[4] = 0xF7;
-        channelPtr[6] = 0xF6;
-        channelPtr[8] = 0xF6;
-        channelPtr[10] = 0xF6;
-        channelPtr[12] = 0xF7;
-        channelPtr[14] = 0xF6;
-        channelPtr[16] = 0xF6;
-        channelPtr[18] = 0xF6;
-        channelPtr[20] = 0xF7;
-        channelPtr[22] = 0xF6;
-        channelPtr[24] = 0xF6;
+        channelPtr[0] = Pattern::Dots;
+        channelPtr[2] = Pattern::Dots;
+        channelPtr[4] = Pattern::ColonDots;
+        channelPtr[6] = Pattern::Dots;
+        channelPtr[8] = Pattern::Dots;
+        channelPtr[10] = Pattern::Dots;
+        channelPtr[12] = Pattern::ColonDots;
+        channelPtr[14] = Pattern::Dots;
+        channelPtr[16] = Pattern::Dots;
+        channelPtr[18] = Pattern::Dots;
+        channelPtr[20] = Pattern::ColonDots;
+        channelPtr[22] = Pattern::Dots;
+        channelPtr[24] = Pattern::Dots;
 
         channelPtr += 30;
     }
@@ -763,13 +860,13 @@ void WriteTick0()
         uint8_t pan = s_Player->GetChannelBalance(channel);
         if (pan < 0x08)
         {
-            screenPtr[160 * 3 + 118 + channel * 160 + 0] = 0xC0 + pan;
-            screenPtr[160 * 3 + 120 + channel * 160 + 0] = 0xC0 + 8;
+            screenPtr[160 * 3 + 118 + channel * 160 + 0] = Panning::Index + pan;
+            screenPtr[160 * 3 + 120 + channel * 160 + 0] = Panning::Empty;
         }
         else
         {
-            screenPtr[160 * 3 + 118 + channel * 160 + 0] = 0xC0 + 8;
-            screenPtr[160 * 3 + 120 + channel * 160 + 0] = 0xC0 + (pan & 0x07);
+            screenPtr[160 * 3 + 118 + channel * 160 + 0] = Panning::Empty;
+            screenPtr[160 * 3 + 120 + channel * 160 + 0] = Panning::Index + (pan & 0x07);
         }
     }
 
@@ -820,20 +917,20 @@ void WriteTickX()
         uint8_t* vuPtr = screenPtr + 160 * 3 + 126 + channel * 160;
         for (uint8_t vol = 0; vol < 16; ++vol)
         {
-            vuPtr[(vol << 1) + 0] = 0xFB;
+            vuPtr[(vol << 1) + 0] = VuMeter::Smaller;
             vuPtr[(vol << 1) + 1] = (Colors::DarkerRoyalPurple << 4) | Colors::Black;
         }
 
         for (uint8_t vol = 0; vol < (channelVolumes[channel] >> 2); ++vol)
         {
-            vuPtr[(vol << 1) + 0] = 0xFE;
+            vuPtr[(vol << 1) + 0] = VuMeter::Large;
             vuPtr[(vol << 1) + 1] = s_Player->IsChannelMuted(channel) ? ((Colors::DarkerRoyalPurple << 4) | Colors::Grey) : vuColors[vol];
         }
         uint8_t partialVol = channelVolumes[channel] & 0x03;
         if (partialVol)
         {
             uint8_t vol = channelVolumes[channel] >> 2;
-            vuPtr[(vol << 1) + 0] = 0xFB + partialVol;
+            vuPtr[(vol << 1) + 0] = VuMeter::Index + partialVol;
             vuPtr[(vol << 1) + 1] = s_Player->IsChannelMuted(channel) ? ((Colors::DarkerRoyalPurple << 4) | Colors::Grey) : vuColors[vol];
         }
         channelVolumes[channel] = max<int8_t>(channelVolumes[channel] - 1, 0);
@@ -905,22 +1002,29 @@ int main(int argc, const char** argv)
 
     //Function::System::SetTimer1Handler(Handler, 50);
 
-    volatile bool Pause = false;
-    volatile bool Quit = false;
-    volatile bool Mute1 = false;
-    volatile bool Mute2 = false;
-    volatile bool Mute3 = false;
-    volatile bool Mute4 = false;
+    struct
+    {
+        volatile bool Pause = false;
+        volatile bool Quit = false;
+        volatile bool Mute1 = false;
+        volatile bool Mute2 = false;
+        volatile bool Mute3 = false;
+        volatile bool Mute4 = false;
+    } Command;
 
     KB::SetScanCodeHandler([&](KB::ScanCode_t scanCode)
     {
-        Mute1 = Mute1 | (scanCode == KB::ScanCodeSet1::One);
-        Mute2 = Mute2 | (scanCode == KB::ScanCodeSet1::Two);
-        Mute3 = Mute3 | (scanCode == KB::ScanCodeSet1::Three);
-        Mute4 = Mute4 | (scanCode == KB::ScanCodeSet1::Four);
-        Pause = Pause | (scanCode == KB::ScanCodeSet1::Pause);
-        Pause = Pause | (scanCode == KB::ScanCodeSet1::Spacebar);
-        Quit = Quit | (scanCode == KB::ScanCodeSet1::Escape);
+        Command.Mute1 = Command.Mute1 | (scanCode == KB::ScanCodeSet1::One);
+        Command.Mute2 = Command.Mute2 | (scanCode == KB::ScanCodeSet1::Two);
+        Command.Mute3 = Command.Mute3 | (scanCode == KB::ScanCodeSet1::Three);
+        Command.Mute4 = Command.Mute4 | (scanCode == KB::ScanCodeSet1::Four);
+        Command.Pause = Command.Pause | (scanCode == KB::ScanCodeSet1::Pause);
+        Command.Pause = Command.Pause | (scanCode == KB::ScanCodeSet1::P);
+        Command.Pause = Command.Pause | (scanCode == KB::ScanCodeSet1::Spacebar);
+
+        // Better to respond to the release event when quitting so we don't get sticky keys.
+        Command.Quit = Command.Quit | (scanCode == (KB::ScanCodeSet1::Q | KB::ScanCodeSet1::Released));
+        Command.Quit = Command.Quit | (scanCode == (KB::ScanCodeSet1::Escape | KB::ScanCodeSet1::Released));
     });
 
     KB::InstallKeyboardHandler();
@@ -941,33 +1045,33 @@ int main(int argc, const char** argv)
 
     do
     {
-        if (Mute1)
+        if (Command.Mute1)
         {
             s_Player->ToggleChannelMute(0);
-            Mute1 = false;
+            Command.Mute1 = false;
         }
-        if (Mute2)
+        if (Command.Mute2)
         {
             s_Player->ToggleChannelMute(1);
-            Mute2 = false;
+            Command.Mute2 = false;
         }
-        if (Mute3)
+        if (Command.Mute3)
         {
             s_Player->ToggleChannelMute(2);
-            Mute3 = false;
+            Command.Mute3 = false;
         }
-        if (Mute4)
+        if (Command.Mute4)
         {
             s_Player->ToggleChannelMute(3);
-            Mute4 = false;
+            Command.Mute4 = false;
         }
-        if (Pause)
+        if (Command.Pause)
         {
             if (s_Player->IsPaused())
                 s_Player->Resume();
             else
                 s_Player->Pause();
-            Pause = false;
+            Command.Pause = false;
         }
         if (row != s_Player->GetCurrentRow())
         {
@@ -979,7 +1083,7 @@ int main(int argc, const char** argv)
             WriteTickX();
             tick = s_Player->GetCurrentTick();
         }
-    } while (!Quit);
+    } while (!Command.Quit);
 
     s_Player->Stop();
 

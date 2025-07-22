@@ -75,8 +75,8 @@ namespace VolumeRampControl
         InterruptEnable = 0x20,
 
         Direction = 0x40,   // *
-        Forward = 0x00,     // *
-        Backward = 0x40,    // *
+        Increasing = 0x00,  // *
+        Decreasing = 0x40,  // *
 
         //Read:
         InterruptStatus = 0x80, // *

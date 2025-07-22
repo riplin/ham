@@ -69,10 +69,13 @@ private:
     void HandleTick0(uint8_t channel);
     void HandleTickX(uint8_t channel);
 
+    int16_t ProcessArpeggio(uint8_t channel, uint8_t parameter);
     bool ProcessPortamentoToNote(uint8_t channel);
-    bool ProcessVolumeSlide(uint8_t channel, uint8_t parameter);
+    void ProcessVolumeSlide(uint8_t channel, uint8_t parameter);
     int16_t ProcessVibrato(uint8_t channel);
     int16_t ProcessTremolo(uint8_t channel);
+
+    void ProcessVolume(uint8_t channel, int16_t volumeDelta);
 
     void CalculateNextValues();
 
@@ -94,6 +97,8 @@ private:
         int16_t Period;
         uint16_t PortaTarget;
         int16_t Volume;
+        int16_t VolumeTarget;
+        int16_t VolumeDelta;
         uint16_t Note;
         uint16_t PortaSpeed;
         uint8_t SampleOffset;
