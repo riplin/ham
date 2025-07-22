@@ -122,7 +122,7 @@ namespace Ham::File
         inline uint32_t GetSampleAddress(uint8_t index) const { return m_Samples[index].Address; }
         inline void SetSampleAddress(uint8_t index, uint32_t address) { m_Samples[index].Address = address; }
 
-        inline uint16_t GetPeriod(uint8_t note, uint8_t fineTune) { return m_TrackerPeriods[m_Tracker].Periods[fineTune * m_TrackerPeriods[m_Tracker].NoteCount + note]; }
+        inline uint16_t GetPeriod(uint8_t note, uint8_t fineTune) const { return m_TrackerPeriods[m_Tracker].Periods[fineTune * m_TrackerPeriods[m_Tracker].NoteCount + note]; }
 
     private:
         Mod(Has::IAllocator& allocator);

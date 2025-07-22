@@ -8,28 +8,20 @@ namespace Ham::Player
 
 void Player::CalculateNextValues()
 {
-    if ((m_CurrentTick + 1) >= m_Speed)
-    {
-        m_NextTick = 0;
-        if (m_PatternDelay != 0)
-            --m_PatternDelay;
+    if (m_PatternDelay != 0)
+        --m_PatternDelay;
 
-        if (m_PatternDelay == 0)
-        {
-            if (m_CurrentRow + 1 >= 64)
-            {
-                m_NextRow = 0;
-                m_NextOrderIndex = m_CurrentOrderIndex + 1;
-            }
-            else
-            {
-                m_NextRow = m_CurrentRow + 1;
-            }
-        }
-    }
-    else
+    if (m_PatternDelay == 0)
     {
-        m_NextTick = m_CurrentTick + 1;
+        if (m_CurrentRow + 1 >= 64)
+        {
+            m_NextRow = 0;
+            m_NextOrderIndex = m_CurrentOrderIndex + 1;
+        }
+        else
+        {
+            m_NextRow = m_CurrentRow + 1;
+        }
     }
 }
 
@@ -37,7 +29,28 @@ void Player::Tick()
 {
     if (m_State != State::Playing)
         return;
-    
+
+    m_CurrentTick = m_NextTick;
+    if (m_CurrentTick == 0)
+    {
+        m_CurrentRow = m_NextRow;
+        m_CurrentOrderIndex = m_NextOrderIndex;
+        if (m_CurrentOrderIndex >= m_Module->GetOrderCount())
+        {
+            Stop();
+            return;
+        }
+        CalculateNextValues();
+    }
+    m_NextTick = m_CurrentTick + 1;
+    if (m_NextTick >= m_Speed)
+    {
+        m_NextTick = 0;
+    }
+
+    // LOG("Player", "Tick start: current tick: %i, current row: %i, current order %i", m_CurrentTick, m_CurrentRow, m_CurrentOrderIndex);
+    // LOG("Player", "Tick start: next tick: %i, next row: %i, next order %i", m_NextTick, m_NextRow, m_NextOrderIndex);
+        
     if (m_PatternDelay == 0)
     {
         if (m_CurrentTick == 0) // next row.
@@ -56,7 +69,10 @@ void Player::Tick()
     if (m_NextSpeed != m_Speed)
     {
         m_Speed = m_NextSpeed;
-        CalculateNextValues(); // Recalculate if necessary.
+        if (m_NextTick >= m_Speed)
+        {
+            m_NextTick = 0;
+        }
     }
 
     if (m_NextBpm != m_Bpm)
@@ -64,16 +80,6 @@ void Player::Tick()
         m_Bpm = m_NextBpm;
         m_RefreshRateCallback((m_Bpm << 1) / 5);
     }
-
-    m_CurrentTick = m_NextTick;
-    m_CurrentRow = m_NextRow;
-    m_CurrentOrderIndex = m_NextOrderIndex;
-    if (m_CurrentOrderIndex >= m_Module->GetOrderCount())
-    {
-        Stop();
-        return;
-    }
-    CalculateNextValues();
 }
 
 void Player::Pause()
@@ -327,6 +333,7 @@ void Player::HandleTick0(uint8_t channel)
             m_NextRow = ((currentNote->Parameter & 0xF0) >> 4) * 10 + (currentNote->Parameter & 0x0F);
             if (m_NextRow > 63)
                 m_NextRow = 0;
+            // LOG("Player", "Pattern break: Order %i, Row %i", m_NextOrderIndex, m_NextRow);
             break;
         case Mod::Effect::SetSpeed:// 5.15 Effect Fxy (Set Speed)
             if (currentNote->Parameter < 0x20)
@@ -416,6 +423,7 @@ void Player::HandleTick0(uint8_t channel)
     if (sampleDirty)
     {
         Function::System::StopVoice(channel);
+        // LOG("Player", "Channel %i: Stop voice", channel);
     }
 
     //Apply channel changes.
@@ -423,6 +431,7 @@ void Player::HandleTick0(uint8_t channel)
     {
         uint16_t frequency = uint16_t(7159090.5 / (m_Channels[channel].Period << 1));
         Function::System::SetPlaybackFrequency(channel, frequency, m_Module->GetChannelCount());
+        // LOG("Player", "Channel %i: Set period %i", channel, m_Channels[channel].Period);
     }
 
     ProcessVolume(channel, 0);
@@ -440,6 +449,7 @@ void Player::HandleTick0(uint8_t channel)
             voiceControl |= GF1::Voice::VoiceControl::LoopToBegin;
 
         Function::System::PlayVoice(channel, m_Channels[channel].SampleBegin, m_Channels[channel].SampleLoopStart, m_Channels[channel].SampleLoopEnd, voiceControl);
+        // LOG("Player", "Play voice %i: Sample %i", channel, m_Channels[channel].Sample - 1);
     }
 }
 
@@ -595,6 +605,7 @@ void Player::ProcessVolume(uint8_t channel, int16_t volumeDelta)
             Function::System::SetVolume(channel, s_Volume[toVolume]);
             m_Channels[channel].Volume = m_Channels[channel].VolumeTarget;
             m_Channels[channel].VolumeDelta = volumeDelta;
+            // LOG("Player", "Channel %i: Set volume: %i", channel, toVolume);
         }
     }
 }
@@ -689,6 +700,7 @@ void Player::HandleTickX(uint8_t channel)
     {
         uint16_t frequency = uint16_t(7159090.5 / ((m_Channels[channel].Period + periodDelta) << 1));
         Function::System::SetPlaybackFrequency(channel, frequency, m_Module->GetChannelCount());
+        // LOG("Player", "Channel %i: Set period %i", channel, m_Channels[channel].Period + periodDelta);
     }
 
     ProcessVolume(channel, volumeDelta);

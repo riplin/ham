@@ -937,8 +937,11 @@ void WriteTickX()
     }
 }
 
+// static volatile uint32_t s_Tick = 0;
+
 void Handler()
 {
+    // s_Tick = s_Tick + 1;
     s_Player->Tick();
 }
 
@@ -1043,8 +1046,15 @@ int main(int argc, const char** argv)
     volatile uint8_t tick = -1;
     volatile uint8_t row = -1;
 
+    // volatile uint32_t mastertick = -1;
     do
     {
+        // if (mastertick != s_Tick)
+        // {
+        //     s_Player->Tick();
+        //     mastertick = s_Tick;
+        // }
+
         if (Command.Mute1)
         {
             s_Player->ToggleChannelMute(0);
@@ -1083,6 +1093,15 @@ int main(int argc, const char** argv)
             WriteTickX();
             tick = s_Player->GetCurrentTick();
         }
+
+        // LOG("Test", "...");
+        // LOG("Test", "Row: %i, tick: %i", row, tick);
+        // for (uint8_t channel = 0; channel < s_Mod->GetChannelCount(); ++channel)
+        // {
+        //     Ham::File::Mod::Note* note = s_Mod->GetPattern(s_Mod->GetOrder(s_Player->GetCurrentOrderIndex())) + row * s_Mod->GetChannelCount() + channel;
+        //     LOG("Test", "C:%i S:%i N:%s E:%1X%02X", channel, note->Sample, note->Note != 0xFFFF ? s_Mod->GetNoteName(note->Note) : "   ", note->Effect, note->Parameter);
+        // }
+
     } while (!Command.Quit);
 
     s_Player->Stop();
