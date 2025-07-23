@@ -66,7 +66,7 @@ private:
 
     uint32_t AllocateCardMemory(uint32_t size);
 
-    void HandleTick0(uint8_t channel);
+    void HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag);
     void HandleTickX(uint8_t channel);
 
     int16_t ProcessArpeggio(uint8_t channel, uint8_t parameter);
@@ -76,8 +76,6 @@ private:
     int16_t ProcessTremolo(uint8_t channel);
 
     void ProcessVolume(uint8_t channel, int16_t volumeDelta);
-
-    void CalculateNextValues();
 
     enum WaveType : uint8_t
     {
@@ -143,9 +141,7 @@ private:
 
     uint8_t m_NextSpeed;
     uint8_t m_NextBpm;
-    uint8_t m_NextTick;
-    uint8_t m_NextRow;
-    uint8_t m_NextOrderIndex;
+    File::Mod::Note* m_CurrentNote;
 
     uint32_t m_MemoryRemaining[4];
 

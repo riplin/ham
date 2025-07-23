@@ -643,8 +643,8 @@ void WriteStatic()
     FillRectangle(0, 29, width - 1, 29, ' ', (Colors::DarkRoyalPurple << 4) | Colors::White, width);
 
     // Song info
-    DrawBorder(7, 1, 28, 4, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    FillRectangle(8, 2, 27, 3, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, width);
+    DrawBorder(7, 1, 28, 5, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    FillRectangle(8, 2, 27, 4, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, width);
 
     // VU meters
     DrawBorder(62, 2, 79, 8, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
@@ -669,8 +669,8 @@ void WriteStatic()
     WriteString("Tempo:", 1, 3, (Colors::DarkRoyalPurple << 4) | Colors::White);
     WriteString("bpm:", 8, 3, (Colors::DarkerRoyalPurple << 4) | Colors::DarkGrey);
     WriteString("speed:", 16, 3, (Colors::DarkerRoyalPurple << 4) | Colors::DarkGrey);
+    WriteString("Order:", 1, 4, (Colors::DarkRoyalPurple << 4) | Colors::White);
 
-    WriteString("Progress", 1, 5, (Colors::DarkRoyalPurple << 4) | Colors::White);
     WriteString("Samples", 35, 1, (Colors::DarkRoyalPurple << 4) | Colors::White);
     WriteString("Bal", 59, 1, (Colors::DarkRoyalPurple << 4) | Colors::White);
     WriteString("Volume", 63, 1, (Colors::DarkRoyalPurple << 4) | Colors::White);
@@ -802,6 +802,17 @@ void WriteTick0()
     bpm[1] = bpmT + '0';
     bpm[2] = bpmS + '0';
     WriteString(bpm, 12, 3);
+
+    uint8_t cOI = currentOrderIndex;
+    char order[4] =  {' ', ' ', ' ', '\0'};
+    uint8_t orderS = cOI % 10;
+    cOI /= 10;
+    uint8_t orderT = cOI % 10;
+    uint8_t orderH = cOI / 10;
+    order[0] = ((orderH > 0) && (orderT > 0)) ? orderH + '0' : ' ';
+    order[1] = (orderT > 0) ? orderT + '0' : ' ';
+    order[2] = orderS + '0';
+    WriteString(order, 8, 4);
 
     uint8_t patternIndex = s_Mod->GetOrder(currentOrderIndex);
     Mod::Note* currentPattern = s_Mod->GetPattern(patternIndex);
@@ -937,11 +948,8 @@ void WriteTickX()
     }
 }
 
-// static volatile uint32_t s_Tick = 0;
-
 void Handler()
 {
-    // s_Tick = s_Tick + 1;
     s_Player->Tick();
 }
 
@@ -1046,15 +1054,8 @@ int main(int argc, const char** argv)
     volatile uint8_t tick = -1;
     volatile uint8_t row = -1;
 
-    // volatile uint32_t mastertick = -1;
     do
     {
-        // if (mastertick != s_Tick)
-        // {
-        //     s_Player->Tick();
-        //     mastertick = s_Tick;
-        // }
-
         if (Command.Mute1)
         {
             s_Player->ToggleChannelMute(0);
@@ -1083,25 +1084,22 @@ int main(int argc, const char** argv)
                 s_Player->Pause();
             Command.Pause = false;
         }
-        if (row != s_Player->GetCurrentRow())
+
+        bool updateTick0 = (row != s_Player->GetCurrentRow()) && s_Player->GetCurrentRow() != 64;
+        bool updateTickX = updateTick0 || (tick != s_Player->GetCurrentTick()  && s_Player->GetCurrentRow() != 64);
+
+        if (updateTick0)
         {
             WriteTick0();
             row = s_Player->GetCurrentRow();
+            LOG("Test", "WriteTick0: Updated Tick %i on screen", s_Player->GetCurrentTick());
         }
-        if (tick != s_Player->GetCurrentTick())
+        if (updateTickX)
         {
             WriteTickX();
             tick = s_Player->GetCurrentTick();
+            LOG("Test", "WriteTickX: Updated Tick %i on screen", tick);
         }
-
-        // LOG("Test", "...");
-        // LOG("Test", "Row: %i, tick: %i", row, tick);
-        // for (uint8_t channel = 0; channel < s_Mod->GetChannelCount(); ++channel)
-        // {
-        //     Ham::File::Mod::Note* note = s_Mod->GetPattern(s_Mod->GetOrder(s_Player->GetCurrentOrderIndex())) + row * s_Mod->GetChannelCount() + channel;
-        //     LOG("Test", "C:%i S:%i N:%s E:%1X%02X", channel, note->Sample, note->Note != 0xFFFF ? s_Mod->GetNoteName(note->Note) : "   ", note->Effect, note->Parameter);
-        // }
-
     } while (!Command.Quit);
 
     s_Player->Stop();

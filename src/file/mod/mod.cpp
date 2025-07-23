@@ -288,32 +288,29 @@ Mod* Mod::Load(Has::IAllocator& allocator, const char* fileName)
     {
         if (mod->m_Samples[i].Length != 0)
         {
-            uint32_t position = stream.Position();
-            uint16_t length = mod->m_Samples[i].Length;
-            if (mod->m_Samples[i].LoopEnd != 0)
-                length = min<uint16_t>(mod->m_Samples[i].LoopEnd, length);
+            uint32_t position = stream.Position() + mod->m_Samples[i].Length;
 
-            mod->m_Samples[i].Data = allocator.AllocateAs<uint8_t>(length + 1);
-            if (!stream.Read(length, mod->m_Samples[i].Data))
+            if (mod->m_Samples[i].LoopEnd != 0)
+                mod->m_Samples[i].Length = min<uint16_t>(mod->m_Samples[i].Length,mod->m_Samples[i].LoopEnd);
+
+            mod->m_Samples[i].Data = allocator.AllocateAs<uint8_t>(mod->m_Samples[i].Length + 1);
+            if (!stream.Read(mod->m_Samples[i].Length, mod->m_Samples[i].Data))
             {
                 LOG("Mod", "Error reading sample %i data with length %i", i, length);
                 Mod::Destroy(mod);
                 return nullptr;
             }
 
-            stream.SeekFromStart(position + mod->m_Samples[i].Length);
-
-            //This seems to kill the click gremlins.
             if (mod->m_Samples[i].LoopEnd != 0)
             {
                 mod->m_Samples[i].Data[mod->m_Samples[i].LoopEnd] = mod->m_Samples[i].Data[mod->m_Samples[i].LoopStart];
-                mod->m_Samples[i].LoopEnd--;
             }
             else
             {
-                mod->m_Samples[i].Data[length] = mod->m_Samples[i].Data[length];
+                mod->m_Samples[i].Data[mod->m_Samples[i].Length] = 0;
             }
-            mod->m_Samples[i].Length = length - 1;
+
+            stream.SeekFromStart(position);
         }
     }
 
