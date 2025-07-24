@@ -30,7 +30,7 @@ namespace Ham::Gravis::Shared::Function::System
         extern const char* ToString(InitializeError_t error);
     }
 
-    extern InitializeError_t Initialize(Has::IAllocator& allocator);
+    extern InitializeError_t Initialize(Has::IAllocator& allocator, uint8_t activeVoices);
     extern void Shutdown();
 
     typedef std::function<void(void)> TimerCallback_t;
@@ -48,7 +48,7 @@ namespace Ham::Gravis::Shared::Function::System
 
     extern void SetMidiReceiveCallback(const MidiReceiveCallback_t& callback);
 
-    extern void UploadSound(GF1::Global::DramIOAddress_t boardAddress, uint8_t* data, uint32_t length);
+    extern void UploadSound(GF1::Global::DramIOAddress_t boardAddress, const void* data, uint32_t length);
 
     extern void PlayVoice(GF1::Page_t voice,
                           GF1::Global::DramIOAddress_t startLocation,

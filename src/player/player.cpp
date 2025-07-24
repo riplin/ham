@@ -23,11 +23,11 @@ void Player::Tick()
     if (m_CurrentTick >= m_Speed)
     {
         m_CurrentTick = 0;
-        if (m_CurrentRow >= 64)
+        if (m_CurrentRow >= m_Song->GetPatternRowCount(m_Song->GetOrder(m_CurrentOrderIndex)))
         {
             ++m_CurrentOrderIndex;
             m_CurrentRow = 0;
-            if (m_CurrentOrderIndex >= m_Module->GetOrderCount())
+            if (m_CurrentOrderIndex >= m_Song->GetOrderCount())
             {
                 Stop();
                 return;
@@ -37,11 +37,11 @@ void Player::Tick()
         {
             bool breakFlag = false;
             bool jumpFlag = false;
-            uint8_t currentOrder = m_Module->GetOrder(m_CurrentOrderIndex);
-            File::Mod::Note* currentPattern = m_Module->GetPattern(currentOrder);
-            m_CurrentNote = currentPattern + m_CurrentRow * m_Module->GetChannelCount();
+            uint16_t currentOrder = m_Song->GetOrder(m_CurrentOrderIndex);
+            const File::Song::Note* currentPattern = m_Song->GetPatternNotes(currentOrder);
+            m_CurrentNote = currentPattern + m_CurrentRow * m_Song->GetChannelCount();
 
-            for (uint8_t channel = 0; channel < m_Module->GetChannelCount(); ++channel)
+            for (uint8_t channel = 0; channel < m_Song->GetChannelCount(); ++channel)
             {
                 HandleTick0(channel, breakFlag, jumpFlag);
                 ++m_CurrentNote;
@@ -55,8 +55,8 @@ void Player::Tick()
     }
     else
     {
-        m_CurrentNote -= m_Module->GetChannelCount();        
-        for (uint8_t channel = 0; channel < m_Module->GetChannelCount(); ++channel)
+        m_CurrentNote -= m_Song->GetChannelCount();        
+        for (uint8_t channel = 0; channel < m_Song->GetChannelCount(); ++channel)
         {
             HandleTickX(channel);
             ++m_CurrentNote;
@@ -121,7 +121,7 @@ void Player::Reset()
     m_NextSpeed = 6;
     m_NextBpm = 125;
 
-    m_CurrentNote = m_Module->GetPattern(m_Module->GetOrder(m_CurrentOrderIndex));
+    m_CurrentNote = m_Song->GetPatternNotes(m_Song->GetOrder(m_CurrentOrderIndex));
 
     for (uint8_t i = 0; i < sizeof(m_Channels) / sizeof(Channel); ++i)
     {
@@ -160,17 +160,17 @@ void Player::Reset()
 void Player::UploadSamples()
 {
     using namespace Ham::Gravis::Shared;
-    for (uint8_t i = 0; i < m_Module->GetSampleCount(); ++i)
+    for (uint8_t i = 0; i < m_Song->GetInstrumentCount(); ++i)
     {
-        if (m_Module->GetSampleLength(i) == 0)
+        if (m_Song->GetSample(i, 0)->Length == 0)
             continue;
 
-        uint32_t address = AllocateCardMemory(m_Module->GetSampleLength(i) + 1);
+        uint32_t address = AllocateCardMemory(m_Song->GetSample(i, 0)->Length + m_Song->GetSample(i, 0)->WidthInBytes());
         if (address == 0xffffffff)
             return;
 
-        m_Module->SetSampleAddress(i, address);
-        Function::System::UploadSound(address, m_Module->GetSampleData(i), m_Module->GetSampleLength(i) + 1);
+        m_SampleAddress[i] = address;
+        Function::System::UploadSound(address, m_Song->GetSample(i, 0)->Data, m_Song->GetSample(i, 0)->Length + 1);
     }
 }
 
@@ -201,8 +201,8 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
 
     // Delay note. We ignore everything until that tick is reached.
     if ((m_CurrentTick == 0) && 
-        (m_CurrentNote->Effect == Mod::Effect::MoreEffects) &&
-        ((m_CurrentNote->Parameter & Mod::SubEffect::Mask) == Mod::SubEffect::DelayNote))
+        (m_CurrentNote->Effect == Song::Effect::MoreEffects) &&
+        ((m_CurrentNote->Parameter & Song::SubEffect::Mask) == Song::SubEffect::DelayNote))
         return;
 
     //property dirty flags:
@@ -210,11 +210,11 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
     bool panDirty = false;
     bool periodDirty = false;
 
-    if (m_CurrentNote->Sample != 0)
+    if (m_CurrentNote->Instrument != 0)
     {
-        m_Channels[channel].Sample = m_CurrentNote->Sample;
-        m_Channels[channel].FineTune = m_Module->GetSampleFineTune(m_Channels[channel].Sample - 1);
-        m_Channels[channel].VolumeTarget = m_Module->GetSampleVolume(m_Channels[channel].Sample - 1);
+        m_Channels[channel].Sample = m_CurrentNote->Instrument;
+        m_Channels[channel].FineTune = m_Song->GetSample(m_Channels[channel].Sample - 1, 0)->FineTune;
+        m_Channels[channel].VolumeTarget = m_Song->GetSample(m_Channels[channel].Sample - 1, 0)->Volume;
     }
 
     if (m_CurrentNote->Parameter != 0x00)
@@ -225,11 +225,11 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
     {
         m_Channels[channel].Note = m_CurrentNote->Note;
         uint8_t sample = m_Channels[channel].Sample - 1;
-        correctPeriod = m_Module->GetPeriod(m_CurrentNote->Note, m_Channels[channel].FineTune);
+        correctPeriod = m_Song->GetPeriod(m_CurrentNote->Note, m_Channels[channel].FineTune);
 
-        m_Channels[channel].SampleLoopEnd = (m_Module->GetSampleAddress(sample) + m_Module->GetSampleLength(sample));
-        m_Channels[channel].SampleBegin = m_Module->GetSampleAddress(sample);
-        m_Channels[channel].SampleLoopStart = m_Module->GetSampleAddress(sample) + m_Module->GetSampleLoopStart(sample);
+        m_Channels[channel].SampleLoopEnd = (m_SampleAddress[sample] + m_Song->GetSample(sample, 0)->Length);
+        m_Channels[channel].SampleBegin = m_SampleAddress[sample];
+        m_Channels[channel].SampleLoopStart = m_SampleAddress[sample] + m_Song->GetSample(sample, 0)->LoopStart;
         
         if ((m_Channels[channel].VibratoWaveType & WaveType::DontRetrigger) == 0)
             m_Channels[channel].VibratoPosition = 0;
@@ -237,7 +237,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
         if ((m_Channels[channel].TremoloWaveType & WaveType::DontRetrigger) == 0)
             m_Channels[channel].TremoloPosition = 0;
 
-        if ((m_CurrentNote->Effect != Mod::Effect::PortamentoToNote) && (m_CurrentNote->Effect != Mod::Effect::PortamentoAndVolumeSlide))
+        if ((m_CurrentNote->Effect != Song::Effect::PortamentoToNote) && (m_CurrentNote->Effect != Song::Effect::PortamentoAndVolumeSlide))
         {
             m_Channels[channel].Period = correctPeriod;
             sampleDirty = true;
@@ -249,7 +249,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
     {
         switch(m_CurrentNote->Effect)
         {
-        case Mod::Effect::PortamentoToNote:// 5.4 Effect 3xy (Porta To Note)
+        case Song::Effect::PortamentoToNote:// 5.4 Effect 3xy (Porta To Note)
             if (correctPeriod != 0)
             {
                 m_Channels[channel].PortaTarget = correctPeriod;
@@ -259,53 +259,53 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
                 m_Channels[channel].PortaSpeed = m_CurrentNote->Parameter;
             }
             break;
-        case Mod::Effect::Vibrato:// 5.5 Effect 4xy (Vibrato)
+        case Song::Effect::Vibrato:// 5.5 Effect 4xy (Vibrato)
             if ((m_CurrentNote->Parameter & 0xF0) != 0)
                 m_Channels[channel].VibratoSpeed = (m_CurrentNote->Parameter & 0xF0) >> 4;
             if ((m_CurrentNote->Parameter & 0x0F) != 0)
                 m_Channels[channel].VibratoDepth = m_CurrentNote->Parameter & 0x0F;
             break;
-        case Mod::Effect::PortamentoAndVolumeSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
+        case Song::Effect::PortamentoAndVolumeSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
             if (correctPeriod != 0)
             {
                 m_Channels[channel].PortaTarget = correctPeriod;
             }
             break;
-        case Mod::Effect::Tremolo:// 5.8 Effect 7xy (Tremolo)
+        case Song::Effect::Tremolo:// 5.8 Effect 7xy (Tremolo)
             if ((m_CurrentNote->Parameter & 0xF0) != 0)
                 m_Channels[channel].TremoloSpeed = (m_CurrentNote->Parameter & 0xF0) >> 4;
             if ((m_CurrentNote->Parameter & 0x0F) != 0)
                 m_Channels[channel].TremoloDepth = m_CurrentNote->Parameter & 0x0F;
             break;
-        case Mod::Effect::Pan:// 5.9 Effect 8xy (Pan)
+        case Song::Effect::Pan:// 5.9 Effect 8xy (Pan)
             m_Channels[channel].Balance = min<uint8_t>(m_CurrentNote->Parameter >> 3, 0xf);
             //This is supposed to be surround, but that requires 2 channels and an inverted sample.
             if (m_CurrentNote->Parameter == 0xA4) m_Channels[channel].Balance = 0x07;
             panDirty = true;
             break;
-        case Mod::Effect::SampleOffset:// 5.10 Effect 9xy (Sample Offset)
+        case Song::Effect::SampleOffset:// 5.10 Effect 9xy (Sample Offset)
             {
                 m_Channels[channel].SampleOffset = (m_CurrentNote->Parameter) != 0 ? m_CurrentNote->Parameter : m_Channels[channel].SampleOffset;
                 uint32_t sampleOffset = uint32_t(m_Channels[channel].SampleOffset) << 8;
 
-                m_Channels[channel].SampleBegin = m_Module->GetSampleAddress(m_Channels[channel].Sample - 1) + sampleOffset;
+                m_Channels[channel].SampleBegin = m_SampleAddress[m_Channels[channel].Sample - 1] + sampleOffset;
 
                 if (m_Channels[channel].SampleBegin > m_Channels[channel].SampleLoopEnd)
                     m_Channels[channel].SampleBegin = m_Channels[channel].SampleLoopEnd;
             }
             break;
-        case Mod::Effect::JumpToPattern:// 5.12 Effect Bxy (Jump To Pattern)
+        case Song::Effect::JumpToPattern:// 5.12 Effect Bxy (Jump To Pattern)
             m_CurrentOrderIndex = m_CurrentNote->Parameter;
             m_CurrentRow = -1;
-            if (m_CurrentOrderIndex >= m_Module->GetOrderCount())
+            if (m_CurrentOrderIndex >= m_Song->GetOrderCount())
                 m_CurrentOrderIndex = 0;
             jumpFlag = true;
             LOG("Player", "Jump: Order: %i, Row: %i", m_CurrentOrderIndex, m_CurrentRow);
             break;
-        case Mod::Effect::SetVolume:// 5.13 Effect Cxy (Set Volume)
+        case Song::Effect::SetVolume:// 5.13 Effect Cxy (Set Volume)
             m_Channels[channel].VolumeTarget = min<uint8_t>(m_CurrentNote->Parameter, 0x40);
             break;
-        case Mod::Effect::PatternBreak:// 5.14 Effect Dxy (Pattern Break)
+        case Song::Effect::PatternBreak:// 5.14 Effect Dxy (Pattern Break)
             m_CurrentRow = ((m_CurrentNote->Parameter & 0xF0) >> 4) * 10 + (m_CurrentNote->Parameter & 0x0F) - 1;
             if (m_CurrentRow > 63)
                 m_CurrentRow = -1;
@@ -314,7 +314,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
             breakFlag = true;
             LOG("Player", "Pattern break: Order %i, Row: %i", m_CurrentOrderIndex, m_CurrentRow);
             break;
-        case Mod::Effect::SetSpeed:// 5.15 Effect Fxy (Set Speed)
+        case Song::Effect::SetSpeed:// 5.15 Effect Fxy (Set Speed)
             if (m_CurrentNote->Parameter < 0x20)
             {//Speed
                 m_Speed = m_CurrentNote->Parameter;
@@ -324,36 +324,36 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
                 m_RefreshRateCallback((m_Bpm << 1) / 5);
             }
             break;
-        case Mod::Effect::MoreEffects://Sub-effects
-            switch(m_CurrentNote->Parameter & Mod::SubEffect::Mask)
+        case Song::Effect::MoreEffects://Sub-effects
+            switch(m_CurrentNote->Parameter & Song::SubEffect::Mask)
             {
-            case Mod::SubEffect::SetFilter:// 5.16 Effect E0x (Set Filter)
+            case Song::SubEffect::SetFilter:// 5.16 Effect E0x (Set Filter)
                 //Can't implement. Amiga hardware specific.
                 break;
-            case Mod::SubEffect::FinePortaUp:// 5.17 Effect E1x (Fine Porta Up)
+            case Song::SubEffect::FinePortaUp:// 5.17 Effect E1x (Fine Porta Up)
                 m_Channels[channel].Period -= m_CurrentNote->Parameter & 0x0F;
                 periodDirty = true;
                 break;
-            case Mod::SubEffect::FinePortaDown:// 5.18 Effect E2x (Fine Porta Down)
+            case Song::SubEffect::FinePortaDown:// 5.18 Effect E2x (Fine Porta Down)
                 m_Channels[channel].Period += m_CurrentNote->Parameter & 0x0F;
                 periodDirty = true;
                 break;
-            case Mod::SubEffect::GlissandoControl:// 5.19 Effect E3x (Glissando Control)
+            case Song::SubEffect::GlissandoControl:// 5.19 Effect E3x (Glissando Control)
                 break;
-            case Mod::SubEffect::SetVibratoWaveform:// 5.20 Effect E4x (Set Vibrato Waveform)
+            case Song::SubEffect::SetVibratoWaveform:// 5.20 Effect E4x (Set Vibrato Waveform)
                 m_Channels[channel].VibratoWaveType = WaveType(m_CurrentNote->Parameter & 0x07);
                 break;
-            case Mod::SubEffect::SetFinetune:// 5.21 Effect E5x (Set Finetune)
+            case Song::SubEffect::SetFinetune:// 5.21 Effect E5x (Set Finetune)
                 {
                     m_Channels[channel].FineTune = m_CurrentNote->Parameter & 0x0F;
                     if (m_Channels[channel].Note != 0xFFFF)
                     {
-                        m_Channels[channel].Period = m_Module->GetPeriod(m_Channels[channel].Note, m_Channels[channel].FineTune);
+                        m_Channels[channel].Period = m_Song->GetPeriod(m_Channels[channel].Note, m_Channels[channel].FineTune);
                         periodDirty = true;
                     }
                 }
                 break;
-            case Mod::SubEffect::PatternLoop:// 5.22 Effect E6x (Pattern Loop)
+            case Song::SubEffect::PatternLoop:// 5.22 Effect E6x (Pattern Loop)
                 if ((m_CurrentNote->Parameter & 0xF) == 0x00)
                 {
                     m_Channels[channel].LoopTarget = m_CurrentRow;
@@ -378,24 +378,24 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
                     }
                 }
                 break;
-            case Mod::SubEffect::SetTremoloWaveForm:// 5.23 Effect E7x (Set Tremolo WaveForm)
+            case Song::SubEffect::SetTremoloWaveForm:// 5.23 Effect E7x (Set Tremolo WaveForm)
                 m_Channels[channel].TremoloWaveType = WaveType(m_CurrentNote->Parameter & 0x07);
                 break;
-            case Mod::SubEffect::FinePanning:// 5.24 Effect E8x (16 Position Panning)
+            case Song::SubEffect::FinePanning:// 5.24 Effect E8x (16 Position Panning)
                 m_Channels[channel].Balance = m_CurrentNote->Parameter & 0x0F;
                 panDirty = true;
                 break;
-            case Mod::SubEffect::FineVolumeSlideUp:// 5.26 Effect EAx (Fine Volume Slide Up)
+            case Song::SubEffect::FineVolumeSlideUp:// 5.26 Effect EAx (Fine Volume Slide Up)
                 m_Channels[channel].VolumeTarget += m_CurrentNote->Parameter & 0x0F;
                 break;
-            case Mod::SubEffect::FineVolumeSlideDown:// 5.27 Effect EBx (Fine Volume Slide Down)
+            case Song::SubEffect::FineVolumeSlideDown:// 5.27 Effect EBx (Fine Volume Slide Down)
                 m_Channels[channel].VolumeTarget += m_CurrentNote->Parameter & 0x0F;
                 break;
-            case Mod::SubEffect::PatternDelay:// 5.30 Effect EEx (Pattern Delay)
+            case Song::SubEffect::PatternDelay:// 5.30 Effect EEx (Pattern Delay)
                 m_PatternDelay = m_CurrentNote->Parameter & 0x0F;
                 LOG("Player", "Set pattern delay to %i", m_PatternDelay);
                 break;
-            case Mod::SubEffect::InvertLoop:// 5.31 Effect EFx (Invert Loop)
+            case Song::SubEffect::InvertLoop:// 5.31 Effect EFx (Invert Loop)
                 // Not supported in any players or trackers apparently.
                 break;
             default:
@@ -411,7 +411,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
     if (periodDirty && (m_Channels[channel].Period > 0))
     {
         uint16_t frequency = uint16_t(7159090.5 / (m_Channels[channel].Period << 1));
-        Function::System::SetPlaybackFrequency(channel, frequency, m_Module->GetChannelCount());
+        Function::System::SetPlaybackFrequency(channel, frequency, m_Song->GetChannelCount());
         LOG("Player", "Channel %i: Set period %i", channel, m_Channels[channel].Period);
     }
 
@@ -426,7 +426,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
                                                 GF1::Voice::VoiceControl::Forward |
                                                 GF1::Voice::VoiceControl::Play;
 
-        if (m_Module->GetSampleLoopEnd(m_Channels[channel].Sample - 1) != 0)
+        if (m_Song->GetSample(m_Channels[channel].Sample - 1, 0)->LoopEnd != 0)
             voiceControl |= GF1::Voice::VoiceControl::LoopToBegin;
 
         Function::System::StopVoice(channel);
@@ -444,10 +444,10 @@ int16_t Player::ProcessArpeggio(uint8_t channel, uint8_t parameter)
         //base note.
         break;
     case 1:
-        delta = m_Module->GetPeriod(m_Channels[channel].Note + (parameter >> 4), m_Channels[channel].FineTune) - m_Channels[channel].Period;
+        delta = m_Song->GetPeriod(m_Channels[channel].Note + (parameter >> 4), m_Channels[channel].FineTune) - m_Channels[channel].Period;
         break;
     case 2:
-        delta = m_Module->GetPeriod(m_Channels[channel].Note + (parameter & 0x0F), m_Channels[channel].FineTune) - m_Channels[channel].Period;
+        delta = m_Song->GetPeriod(m_Channels[channel].Note + (parameter & 0x0F), m_Channels[channel].FineTune) - m_Channels[channel].Period;
         break;
     }
     return delta;
@@ -605,44 +605,44 @@ void Player::HandleTickX(uint8_t channel)
 
     switch(m_CurrentNote->Effect)
     {
-    case Mod::Effect::Arpeggio:// 5.1 Effect 0xy (Arpeggio)
+    case Song::Effect::Arpeggio:// 5.1 Effect 0xy (Arpeggio)
         periodDelta = ProcessArpeggio(channel, m_CurrentNote->Parameter);
         periodDirty = true;
         break;
-    case Mod::Effect::PortamentoUp:// 5.2 Effect 1xy (Porta Up)
+    case Song::Effect::PortamentoUp:// 5.2 Effect 1xy (Porta Up)
         m_Channels[channel].Period = max<int16_t>(m_Channels[channel].Period - int16_t(m_CurrentNote->Parameter), 56);//TODO don't harcode this!
         periodDirty = true;
         break;
-    case Mod::Effect::PortamentoDown:// 5.3 Effect 2xy (Porta Down)
+    case Song::Effect::PortamentoDown:// 5.3 Effect 2xy (Porta Down)
         m_Channels[channel].Period = min<int16_t>(m_Channels[channel].Period + int16_t(m_CurrentNote->Parameter), 0x6B0);//TODO don't harcode this!
         periodDirty = true;
         break;
-    case Mod::Effect::PortamentoToNote:// 5.4 Effect 3xy (Porta To Note)
+    case Song::Effect::PortamentoToNote:// 5.4 Effect 3xy (Porta To Note)
         periodDirty = ProcessPortamentoToNote(channel);
         break;
-    case Mod::Effect::Vibrato:// 5.5 Effect 4xy (Vibrato)
+    case Song::Effect::Vibrato:// 5.5 Effect 4xy (Vibrato)
         periodDelta = ProcessVibrato(channel);
         periodDirty = true;
         break;
-    case Mod::Effect::PortamentoAndVolumeSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
+    case Song::Effect::PortamentoAndVolumeSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
         ProcessVolumeSlide(channel, m_CurrentNote->Parameter);
         periodDirty = ProcessPortamentoToNote(channel);
         break;
-    case Mod::Effect::VibratoAndVolumeSlide:// 5.7 Effect 6xy (Vibrato + Vol Slide)
+    case Song::Effect::VibratoAndVolumeSlide:// 5.7 Effect 6xy (Vibrato + Vol Slide)
         ProcessVolumeSlide(channel, m_CurrentNote->Parameter);
         periodDelta = ProcessVibrato(channel);
         periodDirty = true;
         break;
-    case Mod::Effect::Tremolo:// 5.8 Effect 7xy (Tremolo)
+    case Song::Effect::Tremolo:// 5.8 Effect 7xy (Tremolo)
         volumeDelta = ProcessTremolo(channel);
         break;
-    case Mod::Effect::VolumeSlide:// 5.11 Effect Axy (Volume Slide)
+    case Song::Effect::VolumeSlide:// 5.11 Effect Axy (Volume Slide)
         ProcessVolumeSlide(channel, m_CurrentNote->Parameter);
         break;
-    case Mod::Effect::MoreEffects://Sub-effects
-        switch (m_CurrentNote->Parameter & Mod::SubEffect::Mask)
+    case Song::Effect::MoreEffects://Sub-effects
+        switch (m_CurrentNote->Parameter & Song::SubEffect::Mask)
         {
-        case Mod::SubEffect::RetriggerNote:// 5.25 Effect E9x (Retrig Note)
+        case Song::SubEffect::RetriggerNote:// 5.25 Effect E9x (Retrig Note)
             if ((m_CurrentTick % (m_CurrentNote->Parameter & 0x0F)) == 0)
             {
                 if (m_Channels[channel].Note != 0xffff)
@@ -651,7 +651,7 @@ void Player::HandleTickX(uint8_t channel)
                                                             GF1::Voice::VoiceControl::Forward |
                                                             GF1::Voice::VoiceControl::Play;
 
-                    if (m_Module->GetSampleLoopEnd(m_Channels[channel].Sample - 1) != 0)
+                    if (m_Song->GetSample(m_Channels[channel].Sample - 1, 0)->LoopEnd != 0)
                         voiceControl |= GF1::Voice::VoiceControl::LoopToBegin;
 
                     Function::System::StopVoice(channel);
@@ -659,10 +659,10 @@ void Player::HandleTickX(uint8_t channel)
                 }
             }
             break;
-        case Mod::SubEffect::CutNote:// 5.28 Effect ECx (Cut Note)
+        case Song::SubEffect::CutNote:// 5.28 Effect ECx (Cut Note)
             if (m_CurrentTick == (m_CurrentNote->Parameter & 0x0F)) m_Channels[channel].VolumeTarget = 0;
             break;
-        case Mod::SubEffect::DelayNote:// 5.29 Effect EDx (Delay Note)
+        case Song::SubEffect::DelayNote:// 5.29 Effect EDx (Delay Note)
             {
                 //These won't be used.
                 bool breakFlag = false;
@@ -682,7 +682,7 @@ void Player::HandleTickX(uint8_t channel)
     if (periodDirty && (m_Channels[channel].Period > 0))
     {
         uint16_t frequency = uint16_t(7159090.5 / ((m_Channels[channel].Period + periodDelta) << 1));
-        Function::System::SetPlaybackFrequency(channel, frequency, m_Module->GetChannelCount());
+        Function::System::SetPlaybackFrequency(channel, frequency, m_Song->GetChannelCount());
         LOG("Player", "Channel %i: Set period %i", channel, m_Channels[channel].Period + periodDelta);
     }
 

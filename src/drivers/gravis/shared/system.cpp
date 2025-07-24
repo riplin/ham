@@ -251,12 +251,13 @@ static GF1::DmaControl_t s_DmaLatchValues[8] =
     GF1::DmaControl::Dma1Select7
 };
 
-void UploadSound(GF1::Global::DramIOAddress_t boardAddress, uint8_t* data, uint32_t length)
+void UploadSound(GF1::Global::DramIOAddress_t boardAddress, const void* data, uint32_t length)
 {
+    const uint8_t* ptr = static_cast<const uint8_t*>(data);
     //TODO: use dma. right now just poke it in.
     for (uint32_t i = 0; i < length; ++i)
     {
-        WriteMemory(s_BaseAddress, boardAddress + i, *(data++));
+        WriteMemory(s_BaseAddress, boardAddress + i, *(ptr++));
     }
 }
 
@@ -1000,9 +1001,12 @@ void SetTimer2Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond)
 
 bool s_Initialized = false;
 
-InitializeError_t Initialize(Has::IAllocator& allocator)
+InitializeError_t Initialize(Has::IAllocator& allocator, uint8_t activeVoices)
 {
+    using namespace Has;
     using namespace Has::System;
+
+    activeVoices = min<uint8_t>(max<uint8_t>(activeVoices, 14), 32);
 
     if (s_Initialized)
         return InitializeError::AlreadyInitialized;
@@ -1025,7 +1029,7 @@ InitializeError_t Initialize(Has::IAllocator& allocator)
         {
             LOG("Gravis", "Card detected");
 
-            ResetCard(baseAddress, 14);
+            ResetCard(baseAddress, activeVoices);
             InitializeCard(baseAddress, playDma, recordDma, gf1Interrupt, midiInterrupt);
             // InterruptTable::SetupHandler(s_UltrasoundInterrupt, UltrasoundInterruptHandler);
             // if (s_UltrasoundInterrupt != s_MidiInterrupt)

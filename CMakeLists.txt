@@ -44,7 +44,9 @@ include_directories(
 
 add_library(ham
             src/drivers/gravis/shared/system.cpp
-            src/file/mod/mod.cpp
+            src/file/mod.cpp
+            src/file/s3m.cpp
+            src/file/song.cpp
             src/player/player.cpp
            )
 

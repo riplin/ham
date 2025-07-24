@@ -3,12 +3,13 @@
 #include <conio.h>
 #include <stdio.h>
 #include <sys/nearptr.h>
+#include <ham/file/mod.h>
+#include <ham/file/song.h>
 #include <has/system/pic.h>
 #include <has/system/pit.h>
 #include <hag/system/bda.h>
 #include <has/testing/log.h>
 #include <support/allocatr.h>
-#include <ham/file/mod/mod.h>
 #include <ham/player/player.h>
 #include <has/system/keyboard.h>
 #include <has/system/interrup.h>
@@ -17,7 +18,7 @@
 #include <ham/drivers/gravis/shared/system.h>
 #include <ham/drivers/gravis/shared/gf1/voice/actvvoc.h>
 
-Ham::File::Mod* s_Mod = nullptr;
+Ham::File::Song* s_Song = nullptr;
 Ham::Player::Player* s_Player = nullptr;
 
 uint8_t palette[16 * 3] =
@@ -70,6 +71,78 @@ namespace Border
         0b11111111,
         0b11111111,
         0b11111111,
+        0b11111111,
+        0b01111110,
+        0b00111100,
+        0b00111100,
+
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b10000001,
+        0b11000011,
+        0b11000011,
+
+        0b00111100,
+        0b00111100,
+        0b01111110,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+
+        0b11000011,
+        0b11000011,
+        0b10000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+
+        0b11111000,
+        0b11111100,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111100,
+        0b11111000,
+
+        0b00000111,
+        0b00000011,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000011,
+        0b00000111,
+
+        0b00011111,
+        0b00111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b00111111,
+        0b00011111,
+
+        0b11100000,
+        0b11000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b11000000,
+        0b11100000,
+
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
         0b11111100,
         0b11111000,
         0b11110000,
@@ -136,21 +209,70 @@ namespace Border
         0b00000000,
         0b00000000,
         0b00000000,
-        0b00000000
+        0b00000000,
+
+        0b00111100,
+        0b00111100,
+        0b00111100,
+        0b00111100,
+        0b00111100,
+        0b00111100,
+        0b00111100,
+        0b00111100,
+
+        0b11000011,
+        0b11000011,
+        0b11000011,
+        0b11000011,
+        0b11000011,
+        0b11000011,
+        0b11000011,
+        0b11000011,
+        
+        0b00000000,
+        0b00000000,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b11111111,
+        0b00000000,
+        0b00000000,
+
+        0b11111111,
+        0b11111111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b11111111,
+        0b11111111
     };
 
     enum
     {
-        Index = 0xD3,
+        Index = 0xC0,
+        MiddleTop =                 Index + 0x00,
+        MiddleTopNegative =         Index + 0x01,
+        MiddleBottom =              Index + 0x02,
+        MiddleBottomNegative =      Index + 0x03,
+        MiddleLeft =                Index + 0x04,
+        MiddleLeftNegative =        Index + 0x05,
+        MiddleRight =               Index + 0x06,
+        MiddleRightNegative =       Index + 0x07,
 
-        TopLeft =               Index + 0x00,
-        TopLeftNegative =       Index + 0x01,
-        TopRight =              Index + 0x02,
-        TopRightNegative =      Index + 0x03,
-        BottomLeft =            Index + 0x04,
-        BottomLeftNegative =    Index + 0x05,
-        BottomRight =           Index + 0x06,
-        BottomRightNegative =   Index + 0x07,
+        TopLeft =                   Index + 0x08,
+        TopLeftNegative =           Index + 0x09,
+        TopRight =                  Index + 0x0a,
+        TopRightNegative =          Index + 0x0b,
+        BottomLeft =                Index + 0x0c,
+        BottomLeftNegative =        Index + 0x0d,
+        BottomRight =               Index + 0x0e,
+        BottomRightNegative =       Index + 0x0f,
+
+        MiddleVertical =            Index + 0x10,
+        MiddleVerticalNegative =    Index + 0x11,
+        MiddleHorizontal =          Index + 0x12,
+        MiddleHorizontalNegative =  Index + 0x13,
 
         //Already defined in ASCII table
         Top =                   0xDF,
@@ -342,7 +464,7 @@ namespace Panning
 
     enum
     {
-        Index = 0xC0,
+        Index = 0xB0,
 
         Pan0 = Index + 0x00,
         Pan1 = Index + 0x01,
@@ -578,6 +700,38 @@ void DrawBorder(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t colo
     right[1] = color;
 }
 
+void DrawSkinnyColumn(uint16_t x, uint16_t y0, uint16_t y1, uint8_t color, uint16_t screenWidth)
+{
+    uint8_t* screenPtr = FARPointer(0xB800, 0x0000).ToPointer<uint8_t>();
+    uint8_t* left = screenPtr + ((y0 * screenWidth + x) << 1);
+
+    left[0] = Border::MiddleTopNegative;
+    left[1] = color;
+    left += (screenWidth << 1);
+
+    for (uint16_t y = y0 + 1; y < y1; ++y)
+    {
+        left[0] = Border::MiddleVerticalNegative;
+        left[1] = color;
+        left += (screenWidth << 1);
+    }
+
+    left[0] = Border::MiddleBottomNegative;
+    left[1] = color;
+}
+
+void DrawBlankColumn(uint16_t x, uint16_t y0, uint16_t y1, uint8_t color, uint16_t screenWidth)
+{
+    uint8_t* screenPtr = FARPointer(0xB800, 0x0000).ToPointer<uint8_t>();
+    uint8_t* topLeft = screenPtr + ((y0 * screenWidth + x) << 1);
+    uint8_t* bottomLeft = screenPtr + ((y1 * screenWidth + x) << 1);
+
+    topLeft[0] = Border::TopNegative;
+    topLeft[1] = color;
+    bottomLeft[0] = Border::BottomNegative;
+    bottomLeft[1] = color;
+}
+
 void FillRectangle(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t value, uint8_t color, uint16_t screenWidth)
 {
     uint16_t* screenPtr = FARPointer(0xB800, 0x0000).ToPointer<uint16_t>();
@@ -613,7 +767,15 @@ void WriteStatic()
     // Highlight rows
     uint8_t* screenPtr = FARPointer(0xB800, 0x0000).ToPointer<uint8_t>();
 
-    for (uint16_t i = 0; i < width; ++i)
+    //|00000000001111111111222222222233333333334444444444555555555566666666667777777777
+    //|01234567890123456789012345678901234567890123456789012345678901234567890123456789
+    //|---------+---------+---------+---------+---------+---------+---------+---------+|
+    //|XX SS NNN EPP SS NNN EPP SS NNN EPP SS NNN EPP SS NNN EPP SS NNN EPP SS NNN EPP |
+
+    DrawBorder(0, 10, 79, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    FillRectangle(0, 11, 0, 47, ' ', (Colors::Black << 4) | Colors::DarkGrey, width);
+
+    for (uint16_t i = 0; i < width - 1; ++i)
     {
         screenPtr[(13 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
         screenPtr[(17 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
@@ -624,20 +786,16 @@ void WriteStatic()
         screenPtr[(41 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
         screenPtr[(45 * width * 2) + (i << 1) + 1] = (Colors::Black << 4) | Colors::Grey;
     }
+    
+    DrawBlankColumn(0, 10, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
 
-    //|00000000001111111111222222222233333333334444444444555555555566666666667777777777
-    //|01234567890123456789012345678901234567890123456789012345678901234567890123456789
-    //|---------+---------+---------+---------+---------+---------+---------+---------+|
-    //| XX   SS NNN EPP VV  SS NNN EPP VV  SS NNN EPP VV  SS NNN EPP VV  SS NNN EPP VV |
-
-    DrawBorder( 0, 10,  3, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder( 5, 10, 19, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder(20, 10, 34, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder(35, 10, 49, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder(50, 10, 64, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    DrawBorder(65, 10, 79, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-
-    FillRectangle(4, 10, 4, 48, ' ', (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawSkinnyColumn(2, 10, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawSkinnyColumn(13, 10, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawSkinnyColumn(24, 10, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawSkinnyColumn(35, 10, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawSkinnyColumn(46, 10, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawSkinnyColumn(57, 10, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    DrawSkinnyColumn(68, 10, 48, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
 
     // Focus row
     FillRectangle(0, 29, width - 1, 29, ' ', (Colors::DarkRoyalPurple << 4) | Colors::White, width);
@@ -675,33 +833,33 @@ void WriteStatic()
     WriteString("Bal", 59, 1, (Colors::DarkRoyalPurple << 4) | Colors::White);
     WriteString("Volume", 63, 1, (Colors::DarkRoyalPurple << 4) | Colors::White);
 
-    WriteString(s_Mod->GetName(), 8, 2, (Colors::DarkerRoyalPurple << 4) | Colors::Cream);
+    WriteString(s_Song->GetName(), 8, 2, (Colors::DarkerRoyalPurple << 4) | Colors::Cream);
 
     WriteString("ESC/Q:Quit Space/P/Pause:Pause/Resume 1,2,3,4:Mute", 0, 49);
 }
 
 static const char* s_Hex = "0123456789ABCDEF";
 
-void WriteRow(uint8_t* rowPtr, Ham::File::Mod::Note* currentNote, uint8_t currentRowIndex, bool drawVolume)
+void WriteRow(uint8_t* rowPtr, const Ham::File::Song::Note* currentNote, uint8_t currentRowIndex, bool drawVolume)
 {
     using namespace Has;
-    rowPtr[2] = '0' + (currentRowIndex / 10);
-    rowPtr[4] = '0' + (currentRowIndex % 10);
-    uint8_t* channelPtr = rowPtr + 12;
-    for (uint16_t channel = 0; channel < min<uint16_t>(5, s_Mod->GetChannelCount()); ++channel)
+    rowPtr[0] = '0' + (currentRowIndex / 10);
+    rowPtr[2] = '0' + (currentRowIndex % 10);
+    uint8_t* channelPtr = rowPtr + 6;
+    for (uint16_t channel = 0; channel < min<uint16_t>(7, s_Song->GetChannelCount()); ++channel)
     {
         uint8_t sample[2] = { Pattern::Dots, Pattern::Dots };
-        if (currentNote[channel].Sample != 0)
+        if (currentNote[channel].Instrument != 0)
         {
-            sample[0] = s_Hex[currentNote[channel].Sample >> 4];
-            sample[1] = s_Hex[currentNote[channel].Sample & 0x0F];
+            sample[0] = s_Hex[currentNote[channel].Instrument >> 4];
+            sample[1] = s_Hex[currentNote[channel].Instrument & 0x0F];
         }
 
         static const uint8_t noteDefault[3] = { Pattern::Dots, Pattern::Dots, Pattern::Dots };
         const uint8_t* noteName = noteDefault;
         if (currentNote[channel].Note != 0xFFFF)
         {
-            noteName = (const uint8_t*)s_Mod->GetNoteName(currentNote[channel].Note);
+            noteName = (const uint8_t*)s_Song->GetNoteName(currentNote[channel].Note);
         }
         
         uint8_t effect = Pattern::Dots;
@@ -711,14 +869,6 @@ void WriteRow(uint8_t* rowPtr, Ham::File::Mod::Note* currentNote, uint8_t curren
             effect = s_Hex[currentNote[channel].Effect];
             parameter[0] = s_Hex[currentNote[channel].Parameter >> 4];
             parameter[1] = s_Hex[currentNote[channel].Parameter & 0x0F];
-        }
-
-        uint8_t vol[2] = { Pattern::Dots, Pattern::Dots };
-        if (drawVolume)
-        {
-            uint8_t curVol = s_Player->GetChannelVolume(channel);
-            vol[0] = s_Hex[curVol >> 4];
-            vol[1] = s_Hex[curVol & 0x0F];
         }
 
         channelPtr[0] = sample[0];
@@ -736,12 +886,7 @@ void WriteRow(uint8_t* rowPtr, Ham::File::Mod::Note* currentNote, uint8_t curren
         channelPtr[16] = parameter[0];
         channelPtr[18] = parameter[1];
 
-        channelPtr[20] = Pattern::ColonDots;
-
-        channelPtr[22] = vol[0];
-        channelPtr[24] = vol[1];
-
-        channelPtr += 30;
+        channelPtr += 22;
     }
 }
 
@@ -749,10 +894,10 @@ void ClearRow(uint8_t* rowPtr)
 {
     using namespace Has;
 
+    rowPtr[0] = Pattern::Dots;
     rowPtr[2] = Pattern::Dots;
-    rowPtr[4] = Pattern::Dots;
-    uint8_t* channelPtr = rowPtr + 12;
-    for (uint16_t channel = 0; channel < min<uint16_t>(5, s_Mod->GetChannelCount()); ++channel)
+    uint8_t* channelPtr = rowPtr + 6;
+    for (uint16_t channel = 0; channel < min<uint16_t>(7, s_Song->GetChannelCount()); ++channel)
     {
         channelPtr[0] = Pattern::Dots;
         channelPtr[2] = Pattern::Dots;
@@ -764,11 +909,8 @@ void ClearRow(uint8_t* rowPtr)
         channelPtr[14] = Pattern::Dots;
         channelPtr[16] = Pattern::Dots;
         channelPtr[18] = Pattern::Dots;
-        channelPtr[20] = Pattern::ColonDots;
-        channelPtr[22] = Pattern::Dots;
-        channelPtr[24] = Pattern::Dots;
 
-        channelPtr += 30;
+        channelPtr += 22;
     }
 }
 
@@ -814,8 +956,8 @@ void WriteTick0()
     order[2] = orderS + '0';
     WriteString(order, 8, 4);
 
-    uint8_t patternIndex = s_Mod->GetOrder(currentOrderIndex);
-    Mod::Note* currentPattern = s_Mod->GetPattern(patternIndex);
+    uint8_t patternIndex = s_Song->GetOrder(currentOrderIndex);
+    const Song::Note* currentPattern = s_Song->GetPatternNotes(patternIndex);
 
     uint8_t* screenPtr = FARPointer(0xB800, 0x0000).ToPointer<uint8_t>();
     int16_t screenStartRow = 18 - int16_t(currentRowIndex);
@@ -825,7 +967,7 @@ void WriteTick0()
         dataStartRow = abs(screenStartRow);
         screenStartRow = 0;
     }
-    uint8_t rowCount = min(64 - dataStartRow, 37 - screenStartRow);
+    uint8_t rowCount = min(s_Song->GetPatternRowCount(patternIndex) - dataStartRow, 37 - screenStartRow);
     screenStartRow += 11;
     for (uint16_t clearRow = 11; clearRow < screenStartRow; ++clearRow)
     {
@@ -835,7 +977,7 @@ void WriteTick0()
 
     for (uint16_t row = 0; row < rowCount; ++row)
     {
-        Mod::Note* currentRow = currentPattern + (dataStartRow + row) * s_Mod->GetChannelCount();
+        const Song::Note* currentRow = currentPattern + (dataStartRow + row) * s_Song->GetChannelCount();
         uint8_t* rowPtr = screenPtr + 160 * (screenStartRow + row);
         WriteRow(rowPtr, currentRow, dataStartRow + row, (screenStartRow + row) == 29);
     }
@@ -846,8 +988,8 @@ void WriteTick0()
     }
 
     // Trigger VU meters
-    Mod::Note* vuRow = currentPattern + currentRowIndex * s_Mod->GetChannelCount();
-    for (uint8_t channel = 0; channel < min<uint8_t>(s_Mod->GetChannelCount(), 5); ++channel)
+    const Song::Note* vuRow = currentPattern + currentRowIndex * s_Song->GetChannelCount();
+    for (uint8_t channel = 0; channel < min<uint8_t>(s_Song->GetChannelCount(), 5); ++channel)
     {
         if (vuRow[channel].Note != 0xFFFF)
             channelVolumes[channel] = s_Player->GetChannelVolume(channel);
@@ -856,17 +998,17 @@ void WriteTick0()
     //Sample box
     FillRectangle(35, 3, 56, 7, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, 80);
 
-    for (uint8_t channel = 0; channel < min<uint8_t>(s_Mod->GetChannelCount(), 5); ++channel)
+    for (uint8_t channel = 0; channel < min<uint8_t>(s_Song->GetChannelCount(), 5); ++channel)
     {
         uint8_t sample = s_Player->GetChannelSample(channel);
         if (sample != 0)
         {
-            WriteString(s_Mod->GetSampleName(sample - 1), 35, 3 + channel);
+            WriteString(s_Song->GetInstrumentName(sample - 1), 35, 3 + channel);
         }
     }
 
     //Panning box
-    for (uint8_t channel = 0; channel < min<uint8_t>(s_Mod->GetChannelCount(), 5); ++channel)
+    for (uint8_t channel = 0; channel < min<uint8_t>(s_Song->GetChannelCount(), 5); ++channel)
     {
         uint8_t pan = s_Player->GetChannelBalance(channel);
         if (pan < 0x08)
@@ -884,7 +1026,7 @@ void WriteTick0()
     //Progress box
     FillRectangle(1, 7, 32, 7, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::BabyBlue, 80);
 
-    uint32_t progress = (((currentOrderIndex << 6) + currentRowIndex) * 32 * 8) / (s_Mod->GetOrderCount() << 6);
+    uint32_t progress = (((currentOrderIndex << 6) + currentRowIndex) * 32 * 8) / (s_Song->GetOrderCount() << 6);
     for (uint16_t i = 0; i < (progress >> 3); ++i)
     {
         screenPtr[160 * 7 + 2 + i*2 + 0] = 0xEF;
@@ -971,10 +1113,11 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-    s_Mod = Mod::Load(allocator, argv[1]);
+    s_Song = Mod::Load(allocator, argv[1]);
 
-    if (s_Mod == nullptr)
+    if (s_Song == nullptr)
     {
+        printf("Failed to load: %s\n", argv[1]);
         return -1;
     }
 
@@ -992,17 +1135,17 @@ int main(int argc, const char** argv)
 
     WriteStatic();
 
-    auto result = Function::System::Initialize(allocator);
+    auto result = Function::System::Initialize(allocator, s_Song->GetChannelCount());
 
     if (result != Function::System::InitializeError::Success)
     {
         printf("Error: %s\n", Function::System::InitializeError::ToString(result));
-        Mod::Destroy(s_Mod);
-        s_Mod = nullptr;
+        Song::Destroy(s_Song);
+        s_Song = nullptr;
         return -1;
     }
 
-    s_Player = ::new(allocator.Allocate(sizeof(Ham::Player::Player))) Ham::Player::Player(s_Mod, [](uint8_t RefreshRateInHz)
+    s_Player = ::new(allocator.Allocate(sizeof(Ham::Player::Player))) Ham::Player::Player(s_Song, [](uint8_t RefreshRateInHz)
     {
         SYS_ClearInterrupts();
         uint16_t divisor = PIT::CalculateDivisor(RefreshRateInHz);
@@ -1085,7 +1228,7 @@ int main(int argc, const char** argv)
             Command.Pause = false;
         }
 
-        bool updateTick0 = (row != s_Player->GetCurrentRow()) && s_Player->GetCurrentRow() != 64;
+        bool updateTick0 = (row != s_Player->GetCurrentRow()) && s_Player->GetCurrentRow() != (s_Song->GetPatternRowCount(s_Song->GetOrder(s_Player->GetCurrentOrderIndex()) + 1));
         bool updateTickX = updateTick0 || (tick != s_Player->GetCurrentTick()  && s_Player->GetCurrentRow() != 64);
 
         if (updateTick0)
@@ -1118,7 +1261,7 @@ int main(int argc, const char** argv)
 
     s_Player->~Player();
     allocator.Free(s_Player);
-    Mod::Destroy(s_Mod);
+    Song::Destroy(s_Song);
 
     VGA::ModeSetting::SetVideoMode(80, 25, VGA::ModeSetting::BitsPerPixel::Bpp4, VGA::ModeSetting::Flags::Text);
     VGA::ModeSetting::Shutdown();

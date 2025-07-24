@@ -5,7 +5,7 @@
 #include <functional>
 #include <has/types.h>
 #include <has/ialloc.h>
-#include <ham/file/mod/mod.h>
+#include <ham/file/song.h>
 #include <ham/drivers/gravis/shared/gf1/global/dramioad.h>
 
 namespace Ham::Player
@@ -17,9 +17,9 @@ public:
 
     typedef std::function<void(uint8_t RefreshRateInHz)> SetRefreshRate_t;
 
-    inline Player(Ham::File::Mod* modFile, const SetRefreshRate_t& refreshRateCallback)
+    inline Player(Ham::File::Song* song, const SetRefreshRate_t& refreshRateCallback)
         : m_RefreshRateCallback(refreshRateCallback)
-        , m_Module(modFile)
+        , m_Song(song)
     {
         using namespace Ham::Gravis::Shared;
         //TODO: query the card for number of banks.
@@ -117,9 +117,10 @@ private:
         bool Mute;
     };
 
+    uint32_t m_SampleAddress[31];//TODO: more generic!
     Channel m_Channels[32];
     SetRefreshRate_t m_RefreshRateCallback;
-    Ham::File::Mod* m_Module;
+    Ham::File::Song* m_Song;
 
     enum State : uint8_t
     {
@@ -136,12 +137,12 @@ private:
     uint8_t m_PatternDelay;
 
     uint8_t m_CurrentTick;
-    uint8_t m_CurrentRow;
-    uint8_t m_CurrentOrderIndex;
+    uint16_t m_CurrentRow;
+    uint16_t m_CurrentOrderIndex;
 
     uint8_t m_NextSpeed;
     uint8_t m_NextBpm;
-    File::Mod::Note* m_CurrentNote;
+    const File::Song::Note* m_CurrentNote;
 
     uint32_t m_MemoryRemaining[4];
 

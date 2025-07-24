@@ -12,5 +12,6 @@
 		"*.cpp": "cpp",
 		"*.h": "cpp",
 		"*.inl": "cpp",
+		"algorithm": "cpp"
 	}
 }
