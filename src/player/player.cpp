@@ -31,7 +31,7 @@ void Player::Tick()
             bool breakFlag = false;
             bool jumpFlag = false;
             uint16_t currentOrder = m_Song->GetOrder(m_OrderIndex);
-            const File::Song::Note* currentPattern = m_Song->GetPatternNotes(currentOrder);
+            const File::Song::NoteData* currentPattern = m_Song->GetPatternNotes(currentOrder);
             m_Note = currentPattern + m_Row * m_Song->GetChannelCount();
 
             m_CurrentTick = m_Tick;
@@ -136,10 +136,9 @@ void Player::Reset()
         m_Channels[i].Note = 0;
         m_Channels[i].PortaSpeed = 0;
         m_Channels[i].SampleOffset = 0;
-        m_Channels[i].FineTune = 0;
         m_Channels[i].Balance = ((i & 1) == 0) ? 0x03 : 0x0C;//L, R, L, R, ...
         m_Channels[i].Parameter = 0;
-        m_Channels[i].Sample = 0;
+        m_Channels[i].Sample = 1;
         m_Channels[i].LoopTarget = 0;
         m_Channels[i].LoopCounter = 0;
         m_Channels[i].VibratoDepth = 0;
@@ -154,6 +153,11 @@ void Player::Reset()
 
         Function::System::ResetVoice(i);
         Function::System::SetPan(i, m_Channels[i].Balance);
+    }
+
+    for (uint8_t instrument = 0; instrument < m_Song->GetInstrumentCount(); ++instrument)
+    {
+        m_InstrumentMiddleC[instrument] = m_Song->GetInstrumentMiddleC(instrument);
     }
 }
 
@@ -199,6 +203,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
     using namespace Ham::File;
     using namespace Ham::Gravis::Shared;
 
+    LOG("Player", "HandleTick0 channel %i start", channel);
     // Delay note. We ignore everything until that tick is reached.
     if ((m_Tick == 0) && 
         (m_Note->Effect == Effect::MoreEffects) &&
@@ -211,7 +216,6 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
     if (m_Note->Instrument != 0)
     {
         m_Channels[channel].Sample = m_Note->Instrument;
-        m_Channels[channel].FineTune = m_Song->GetSample(m_Channels[channel].Sample - 1, 0)->FineTune;
         m_Channels[channel].Volume = m_Song->GetSample(m_Channels[channel].Sample - 1, 0)->Volume;
     }
 
@@ -219,11 +223,11 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
         m_Channels[channel].Parameter = m_Note->Parameter;
 
     uint16_t correctPeriod = 0;
-    if (m_Note->Note != 0xffff)
+    if (m_Note->Note != Note::NotSet)
     {
         m_Channels[channel].Note = m_Note->Note;
         uint8_t sample = m_Channels[channel].Sample - 1;
-        correctPeriod = m_Song->GetPeriod(m_Note->Note, m_Channels[channel].FineTune);
+        correctPeriod = (Note::MiddleC * Song::GetPeriod(m_Note->Note)) / m_InstrumentMiddleC[sample];
 
         m_Channels[channel].SampleLoopEnd = (m_SampleAddress[sample] + m_Song->GetSample(sample, 0)->Length);
         m_Channels[channel].SampleBegin = m_SampleAddress[sample];
@@ -328,10 +332,10 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
                 //Can't implement. Amiga hardware specific.
                 break;
             case SubEffect::FinePortaUp:// 5.17 Effect E1x (Fine Porta Up)
-                m_Channels[channel].Period -= m_Note->Parameter & 0x0F;
+                m_Channels[channel].Period -= (m_Note->Parameter & 0x0F) << 2;
                 break;
             case SubEffect::FinePortaDown:// 5.18 Effect E2x (Fine Porta Down)
-                m_Channels[channel].Period += m_Note->Parameter & 0x0F;
+                m_Channels[channel].Period += (m_Note->Parameter & 0x0F) << 2;
                 break;
             case SubEffect::GlissandoControl:// 5.19 Effect E3x (Glissando Control)
                 break;
@@ -340,11 +344,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
                 break;
             case SubEffect::SetFinetune:// 5.21 Effect E5x (Set Finetune)
                 {
-                    m_Channels[channel].FineTune = m_Note->Parameter & 0x0F;
-                    if (m_Channels[channel].Note != 0xFFFF)
-                    {
-                        m_Channels[channel].Period = m_Song->GetPeriod(m_Channels[channel].Note, m_Channels[channel].FineTune);
-                    }
+                    m_InstrumentMiddleC[m_Channels[channel].Sample - 1] = Song::ConvertFineTuneToPeriod(m_Note->Parameter & 0x0F);
                 }
                 break;
             case SubEffect::PatternLoop:// 5.22 Effect E6x (Pattern Loop)
@@ -378,7 +378,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
                 m_Channels[channel].Volume += m_Note->Parameter & 0x0F;
                 break;
             case SubEffect::FineVolumeSlideDown:// 5.27 Effect EBx (Fine Volume Slide Down)
-                m_Channels[channel].Volume += m_Note->Parameter & 0x0F;
+                m_Channels[channel].Volume -= m_Note->Parameter & 0x0F;
                 break;
             case SubEffect::PatternDelay:// 5.30 Effect EEx (Pattern Delay)
                 m_PatternDelay = m_Note->Parameter & 0x0F;
@@ -398,7 +398,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
     //Apply channel changes.
     if (m_Channels[channel].Period > 0)
     {
-        uint16_t frequency = uint16_t(14317056 / (m_Channels[channel].Period << 2));
+        uint16_t frequency = uint16_t(14317056 / m_Channels[channel].Period);
         Function::System::SetPlaybackFrequency(channel, frequency, m_Song->GetChannelCount());
     }
 
@@ -418,6 +418,8 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
         Function::System::StopVoice(channel);
         Function::System::PlayVoice(channel, m_Channels[channel].SampleBegin, m_Channels[channel].SampleLoopStart, m_Channels[channel].SampleLoopEnd, voiceControl);
     }
+
+    LOG("Player", "HandleTick0 channel %i end", channel);
 }
 
 int16_t Player::ProcessArpeggio(uint8_t channel, uint8_t parameter)
@@ -429,34 +431,31 @@ int16_t Player::ProcessArpeggio(uint8_t channel, uint8_t parameter)
         //base note.
         break;
     case 1:
-        delta = m_Song->GetPeriod(m_Channels[channel].Note + (parameter >> 4), m_Channels[channel].FineTune) - m_Channels[channel].Period;
+        delta = ((File::Note::MiddleC * File::Song::GetPeriod(m_Channels[channel].Note + (parameter >> 4))) / m_InstrumentMiddleC[m_Channels[channel].Sample - 1]) - m_Channels[channel].Period;
         break;
     case 2:
-        delta = m_Song->GetPeriod(m_Channels[channel].Note + (parameter & 0x0F), m_Channels[channel].FineTune) - m_Channels[channel].Period;
+        delta = ((File::Note::MiddleC * File::Song::GetPeriod(m_Channels[channel].Note + (parameter & 0x0F))) / m_InstrumentMiddleC[m_Channels[channel].Sample - 1]) - m_Channels[channel].Period;
         break;
     }
     return delta;
 }
 
-bool Player::ProcessPortamentoToNote(uint8_t channel)
+void Player::ProcessPortamentoToNote(uint8_t channel)
 {
     using namespace Has;
-    bool periodDirty = false;
     if (m_Channels[channel].Period != m_Channels[channel].PortaTarget)
     {
         if (m_Channels[channel].Period < m_Channels[channel].PortaTarget)
         {
-            uint16_t newPeriod = m_Channels[channel].Period + m_Channels[channel].PortaSpeed;
+            uint16_t newPeriod = m_Channels[channel].Period + (m_Channels[channel].PortaSpeed << 2);
             m_Channels[channel].Period = min<uint16_t>(newPeriod, m_Channels[channel].PortaTarget);
         }
         else
         {
-            int32_t newPeriod = int32_t(m_Channels[channel].Period) - int32_t(m_Channels[channel].PortaSpeed);
+            int32_t newPeriod = int32_t(m_Channels[channel].Period) - (int32_t(m_Channels[channel].PortaSpeed) << 2);
             m_Channels[channel].Period = uint16_t(max<int32_t>(newPeriod, int32_t(m_Channels[channel].PortaTarget)));
         }
-        periodDirty = true;
     }
-    return periodDirty;
 }
 
 void Player::ProcessVolumeSlide(uint8_t channel, uint8_t parameter)
@@ -498,7 +497,8 @@ int16_t Player::ProcessVibrato(uint8_t channel)
     }
 
     delta *= m_Channels[channel].VibratoDepth;
-    delta >>= 7;
+    //delta >>= 7;
+    delta >>= 5;
 
     if (m_Channels[channel].VibratoPosition < 0)
         delta = -delta;
@@ -569,6 +569,8 @@ void Player::HandleTickX(uint8_t channel)
     using namespace Ham::File;
     using namespace Ham::Gravis::Shared;
 
+    LOG("Player", "HandleTick0 channel %i start", channel);
+
     //property dirty flags:
     int16_t periodDelta = 0;
     int16_t volumeDelta = 0;
@@ -582,17 +584,16 @@ void Player::HandleTickX(uint8_t channel)
         }
         break;
     case Effect::PortamentoUp:// 5.2 Effect 1xy (Porta Up)
-        m_Channels[channel].Period = max<int16_t>(m_Channels[channel].Period - int16_t(m_Note->Parameter), 56);//TODO don't harcode this!
+        m_Channels[channel].Period = max<int16_t>(m_Channels[channel].Period - (int16_t(m_Note->Parameter) << 2), 56);//TODO don't harcode this!
         break;
     case Effect::PortamentoDown:// 5.3 Effect 2xy (Porta Down)
-        m_Channels[channel].Period = min<int16_t>(m_Channels[channel].Period + int16_t(m_Note->Parameter), 0x6B0);//TODO don't harcode this!
+        m_Channels[channel].Period = min<int16_t>(m_Channels[channel].Period + (int16_t(m_Note->Parameter) << 2), 0x6B0);//TODO don't harcode this!
         break;
     case Effect::PortamentoToNote:// 5.4 Effect 3xy (Porta To Note)
         ProcessPortamentoToNote(channel);
         break;
     case Effect::Vibrato:// 5.5 Effect 4xy (Vibrato)
         periodDelta = ProcessVibrato(channel);
-        LOG("Player", "Vibrato channel %i delta: %i pos: %i depth: %i speed %i", channel, periodDelta, m_Channels[channel].VibratoPosition, m_Channels[channel].VibratoDepth, m_Channels[channel].VibratoSpeed);
         break;
     case Effect::PortamentoAndVolumeSlide:// 5.6 Effect 5xy (Porta + Vol Slide)
         ProcessVolumeSlide(channel, m_Note->Parameter);
@@ -614,7 +615,7 @@ void Player::HandleTickX(uint8_t channel)
         case SubEffect::RetriggerNote:// 5.25 Effect E9x (Retrig Note)
             if ((m_Tick % (m_Note->Parameter & 0x0F)) == 0)
             {
-                if (m_Channels[channel].Note != 0xffff)
+                if (m_Channels[channel].Note != Note::NotSet)
                 {
                     GF1::Voice::VoiceControl_t voiceControl = GF1::Voice::VoiceControl::Bits8 |
                                                             GF1::Voice::VoiceControl::Forward |
@@ -650,12 +651,13 @@ void Player::HandleTickX(uint8_t channel)
     //Apply channel changes.
     if (m_Channels[channel].Period > 0)
     {
-        uint16_t frequency = uint16_t(14317056 / ((m_Channels[channel].Period + periodDelta) << 2));
+        uint16_t frequency = uint16_t(14317056 / (m_Channels[channel].Period + periodDelta));
         Function::System::SetPlaybackFrequency(channel, frequency, m_Song->GetChannelCount());
     }
 
     ProcessVolume(channel, volumeDelta);
 
+    LOG("Player", "HandleTick0 channel %i end", channel);
 }
 
 uint16_t Player::s_Volume[65] =

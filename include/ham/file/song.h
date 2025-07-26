@@ -108,6 +108,17 @@ namespace Volume
     };
 }
 
+typedef uint8_t Note_t;
+namespace Note
+{
+    enum
+    {
+        KeyOff = 132,//Last two entries of s_NotePeriods are 0
+        NotSet = 133,//Last two entries of s_NotePeriods are 0
+        MiddleC = 8363  //This value is not stored in Note_t, but made sense to put here instead of hardcoded values everywhere.
+    };
+}
+
 #pragma pack(push, 1)
 
 class Song final
@@ -115,10 +126,9 @@ class Song final
 public:
     static void Destroy(Song* song);
     
-    struct Note
+    struct NoteData
     {
         uint8_t Instrument; // 0 = not set. Starts counting at 1. Subtract 1 to get sample index.
-        uint16_t Period;    // Amiga period. 0 = not set
         uint16_t Note;      // 0...35, 0xffff = not set.
         Effect_t Effect;    // 0 based. Effect = Parameter = 0 = not set.
         uint8_t Parameter;  // Interpreted based on Effect. Effect = Parameter = 0 = not set.
@@ -140,7 +150,6 @@ public:
         uint32_t LoopEnd;   // End of loop in samples. Points 1 byte after loop end!
         char Name[23];      // 0 terminated string.
         SampleWidth Width;  // Bit width of sample.
-        int8_t FineTune;    // Index in to fine tune table.
         uint8_t Volume;     // Default sample volume (0...64 included). TODO: change scale?
 
         inline uint8_t WidthInBytes() const { return (Width + 7) >> 3; }
@@ -155,10 +164,11 @@ public:
     inline uint16_t GetOrder(uint16_t order) const { return (order < m_OrderCount) ? m_Orders[order] : 0; }
     inline uint16_t GetPatternCount() const { return m_PatternCount; }
     inline uint16_t GetPatternRowCount(uint16_t pattern) const { return (pattern < m_PatternCount) ? m_Patterns[pattern].RowCount : 0; }
-    const Note* GetPatternNotes(uint16_t pattern) const;
+    const NoteData* GetPatternNotes(uint16_t pattern) const;
 
     inline uint16_t GetInstrumentCount() const { return m_InstrumentCount; }
     inline const char* GetInstrumentName(uint16_t instrument) const { return (instrument < m_InstrumentCount) ? m_Instruments[instrument].Name : nullptr; }
+    inline uint16_t GetInstrumentMiddleC(uint16_t instrument) const { return (instrument < m_InstrumentCount) ? m_Instruments[instrument].MiddleC : Note::MiddleC; }
 
     inline const Sample* GetSample(uint16_t instrument, uint16_t sample) const 
     {
@@ -167,9 +177,8 @@ public:
                 &m_Instruments[instrument].Samples[sample] : nullptr;
     }
 
-    inline uint16_t GetPeriod(uint8_t note, uint8_t fineTune) const { return m_TrackerPeriods[m_Tracker].Periods[fineTune * m_TrackerPeriods[m_Tracker].NoteCount + note]; }
-    inline const char* GetNoteName(uint8_t note) const { return s_NoteNames[note + m_TrackerPeriods[m_Tracker].NameOffset]; }
-
+    static uint16_t ConvertFineTuneToPeriod(uint8_t fineTune);
+    static inline uint16_t GetPeriod(Note_t note) { return s_NotePeriods[Has::min<Note_t>(note, (sizeof(s_NotePeriods) / sizeof(*s_NotePeriods)) - 1)]; }
 protected:
     friend Song* Mod::Load(Has::IAllocator& allocator, const char* filePath);;
     friend Song* S3m::Load(Has::IAllocator& allocator, const char* filePath);;
@@ -185,13 +194,13 @@ protected:
     void SetInstrumentCount(uint16_t instrumentCount);
 
     void SetInstrumentName(uint16_t instrument, const char* name, uint8_t maxLength);
+    void SetInstrumentMiddleC(uint16_t instrument, uint16_t middleC);
 
     void SetSampleCount(uint16_t instrument, uint16_t sampleCount);
     void SetSampleName(uint16_t instrument, uint16_t sample, const char* name, uint8_t maxLength);
     void SetSampleLength(uint16_t instrument, uint16_t sample, uint32_t length, SampleWidth width);
     void SetSampleLoopStart(uint16_t instrument, uint16_t sample, uint32_t loopStart);
     void SetSampleLoopEnd(uint16_t instrument, uint16_t sample, uint32_t loopEnd);
-    void SetSampleFineTune(uint16_t instrument, uint16_t sample, uint32_t fineTune);
     void SetSampleVolume(uint16_t instrument, uint16_t sample, uint8_t volume);
     bool LoadSampleData(uint16_t instrument, uint16_t sample, Has::IStream& stream);
 
@@ -222,11 +231,10 @@ protected:
 
     void SetPatternCount(uint16_t patternCount);
     void SetPatternRowCount(uint16_t pattern, uint16_t rowCount);
-    void SetNote(uint16_t pattern, uint16_t row, uint8_t channel, const Note& note);
-    bool ResolveNotes();
-    Note* GetNotes(uint16_t pattern);
+    void SetNote(uint16_t pattern, uint16_t row, uint8_t channel, const NoteData& note);
+    NoteData* GetNotes(uint16_t pattern);
 
-    void CalculateFastTrackerNotePeriods();
+    static Note_t PeriodToNote(uint16_t period);
 
 private:
     Song(Has::IAllocator& allocator);
@@ -237,11 +245,12 @@ private:
         Sample* Samples;
         char Name[23];          // 0 terminated string.
         uint16_t SampleCount;
+        uint16_t MiddleC;       // Middle C period.
     };
 
     struct Pattern
     {
-        Note* Notes;
+        NoteData* Notes;
         uint16_t RowCount;
     };
 
@@ -264,24 +273,9 @@ private:
     uint8_t             m_Speed;
     uint8_t             m_Bpm;
     uint8_t             m_Volume;
-    Tracker             m_Tracker;
 
-    uint32_t SetNotes(Tracker tracker);
-
-    struct PeriodDescriptor
-    {
-        uint16_t* Periods;
-        uint8_t NoteCount;
-        uint8_t NameOffset;
-    };
-
-    static PeriodDescriptor m_TrackerPeriods[3];
-
-    static uint16_t s_ProTrackerPeriods[16 * 36];
-    static uint16_t s_TakeTrackerPeriods[16 * 60];
-    static uint16_t s_FastTrackerPeriods[16 * 96];
-
-    static const char* s_NoteNames[96];
+    static uint16_t s_FineTuneToPeriod[16];
+    static uint16_t s_NotePeriods[134];
 };
 
 #pragma pack(pop)

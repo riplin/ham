@@ -17,8 +17,9 @@ public:
 
     typedef std::function<void(uint8_t RefreshRateInHz)> SetRefreshRate_t;
 
-    inline Player(Ham::File::Song* song, const SetRefreshRate_t& refreshRateCallback)
-        : m_RefreshRateCallback(refreshRateCallback)
+    inline Player(Has::IAllocator& allocator, Ham::File::Song* song, const SetRefreshRate_t& refreshRateCallback)
+        : m_Allocator(allocator)
+        , m_RefreshRateCallback(refreshRateCallback)
         , m_Song(song)
     {
         using namespace Ham::Gravis::Shared;
@@ -27,6 +28,8 @@ public:
         m_MemoryRemaining[1] = GF1::Global::DramIOAddress::BankSize;
         m_MemoryRemaining[2] = GF1::Global::DramIOAddress::BankSize;
         m_MemoryRemaining[3] = GF1::Global::DramIOAddress::BankSize;
+
+        m_InstrumentMiddleC = m_Allocator.AllocateAs<uint16_t>(sizeof(uint16_t) * m_Song->GetInstrumentCount());
 
         Reset();
         UploadSamples();
@@ -70,7 +73,7 @@ private:
     void HandleTickX(uint8_t channel);
 
     int16_t ProcessArpeggio(uint8_t channel, uint8_t parameter);
-    bool ProcessPortamentoToNote(uint8_t channel);
+    void ProcessPortamentoToNote(uint8_t channel);
     void ProcessVolumeSlide(uint8_t channel, uint8_t parameter);
     int16_t ProcessVibrato(uint8_t channel);
     int16_t ProcessTremolo(uint8_t channel);
@@ -98,7 +101,6 @@ private:
         uint16_t Note;
         uint16_t PortaSpeed;
         uint8_t SampleOffset;
-        uint8_t FineTune;
         uint8_t Balance;
         uint8_t Parameter;
         uint8_t Sample;
@@ -115,10 +117,12 @@ private:
         bool Mute;
     };
 
+    Has::IAllocator& m_Allocator;
     uint32_t m_SampleAddress[31];//TODO: more generic!
     Channel m_Channels[32];
     SetRefreshRate_t m_RefreshRateCallback;
     Ham::File::Song* m_Song;
+    uint16_t* m_InstrumentMiddleC;
 
     enum State : uint8_t
     {
@@ -142,7 +146,7 @@ private:
     uint8_t m_CurrentRow;
     uint8_t m_CurrentOrderIndex;
 
-    const File::Song::Note* m_Note;
+    const File::Song::NoteData* m_Note;
 
     uint32_t m_MemoryRemaining[4];
 

@@ -182,6 +182,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
 
         song->SetSampleLength(sample, 0, sampleLength, Song::SampleWidth::BitWidth8);
         song->SetSampleFineTune(sample, 0, fineTune);
+        song->SetInstrumentMiddleC(sample, Song::ConvertFineTuneToPeriod(fineTune));
         song->SetSampleVolume(sample, 0, volume);
         song->SetSampleLoopStart(sample, 0, loopStart);
         song->SetSampleLoopEnd(sample, 0, loopEnd);
@@ -227,7 +228,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     {
         song->SetPatternRowCount(pattern, 64);
 
-        Song::Note note;
+        Song::NoteData note;
         uint8_t data[4];
         for (uint16_t row = 0; row < song->GetPatternRowCount(pattern); ++row)
         {
@@ -241,17 +242,19 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
                 }
 
                 note.Instrument = (data[0] & 0xf0) | (data[2] >> 4);
-                note.Period = uint16_t(data[1]) | (uint16_t(data[0] & 0x0f) << 8);
+                uint16_t period = uint16_t(data[1]) | (uint16_t(data[0] & 0x0f) << 8);
                 note.Effect = data[2] & 0x0f;
                 note.Parameter = data[3];
-                note.Note = 0xFFFF;
+                if (period != 0)
+                    note.Note = Song::PeriodToNote(period) - 24;
+                else
+                    note.Note = File::Note::NotSet;
                 note.Volume = Volume::NotSet;
 
                 song->SetNote(pattern, row, channel, note);
             }
         }
     }
-    song->ResolveNotes();
 
     for (uint8_t instrument = 0; instrument < song->GetInstrumentCount(); ++instrument)
     {

@@ -839,10 +839,19 @@ void WriteStatic()
 }
 
 static const char* s_Hex = "0123456789ABCDEF";
+static const char* s_S3mEffect = "0xxGHxxE8ODBxCSTADEFIKLQUVS";
+static const char* s_Effect = s_Hex;
 
-void WriteRow(uint8_t* rowPtr, const Ham::File::Song::Note* currentNote, uint8_t currentRowIndex, bool drawVolume)
+static const char* s_NoteNames[12]
+{
+    "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"
+};
+
+void WriteRow(uint8_t* rowPtr, const Ham::File::Song::NoteData* currentNote, uint8_t currentRowIndex, bool drawVolume)
 {
     using namespace Has;
+    using namespace Ham::File;
+
     rowPtr[0] = '0' + (currentRowIndex / 10);
     rowPtr[2] = '0' + (currentRowIndex % 10);
     uint8_t* channelPtr = rowPtr + 6;
@@ -855,18 +864,21 @@ void WriteRow(uint8_t* rowPtr, const Ham::File::Song::Note* currentNote, uint8_t
             sample[1] = s_Hex[currentNote[channel].Instrument & 0x0F];
         }
 
-        static const uint8_t noteDefault[3] = { Pattern::Dots, Pattern::Dots, Pattern::Dots };
-        const uint8_t* noteName = noteDefault;
-        if (currentNote[channel].Note != 0xFFFF)
+        uint8_t noteName[3] = { Pattern::Dots, Pattern::Dots, Pattern::Dots };
+        if (currentNote[channel].Note < Note::KeyOff)
         {
-            noteName = (const uint8_t*)s_Song->GetNoteName(currentNote[channel].Note);
+            uint8_t idx = currentNote[channel].Note % 12;
+            uint8_t oct = currentNote[channel].Note / 12;
+            noteName[0] = s_NoteNames[idx][0];
+            noteName[1] = s_NoteNames[idx][1];
+            noteName[2] = s_Hex[oct];
         }
         
         uint8_t effect = Pattern::Dots;
         uint8_t parameter[2] = { Pattern::Dots, Pattern::Dots };
         if ((currentNote[channel].Effect != 0) || (currentNote[channel].Parameter != 0))
         {
-            effect = s_Hex[currentNote[channel].Effect];
+            effect = s_Effect[currentNote[channel].Effect];
             parameter[0] = s_Hex[currentNote[channel].Parameter >> 4];
             parameter[1] = s_Hex[currentNote[channel].Parameter & 0x0F];
         }
@@ -957,7 +969,7 @@ void WriteTick0()
     WriteString(order, 8, 4);
 
     uint8_t patternIndex = s_Song->GetOrder(currentOrderIndex);
-    const Song::Note* currentPattern = s_Song->GetPatternNotes(patternIndex);
+    const Song::NoteData* currentPattern = s_Song->GetPatternNotes(patternIndex);
 
     uint8_t* screenPtr = FARPointer(0xB800, 0x0000).ToPointer<uint8_t>();
     int16_t screenStartRow = 18 - int16_t(currentRowIndex);
@@ -977,7 +989,7 @@ void WriteTick0()
 
     for (uint16_t row = 0; row < rowCount; ++row)
     {
-        const Song::Note* currentRow = currentPattern + (dataStartRow + row) * s_Song->GetChannelCount();
+        const Song::NoteData* currentRow = currentPattern + (dataStartRow + row) * s_Song->GetChannelCount();
         uint8_t* rowPtr = screenPtr + 160 * (screenStartRow + row);
         WriteRow(rowPtr, currentRow, dataStartRow + row, (screenStartRow + row) == 29);
     }
@@ -988,10 +1000,10 @@ void WriteTick0()
     }
 
     // Trigger VU meters
-    const Song::Note* vuRow = currentPattern + currentRowIndex * s_Song->GetChannelCount();
+    const Song::NoteData* vuRow = currentPattern + currentRowIndex * s_Song->GetChannelCount();
     for (uint8_t channel = 0; channel < min<uint8_t>(s_Song->GetChannelCount(), 5); ++channel)
     {
-        if (vuRow[channel].Note != 0xFFFF)
+        if (vuRow[channel].Note != Note::NotSet)
             channelVolumes[channel] = s_Player->GetChannelVolume(channel);
     }
 
@@ -1147,7 +1159,7 @@ int main(int argc, const char** argv)
 
     Function::System::Configure(s_Song->GetChannelCount());
 
-    s_Player = ::new(allocator.Allocate(sizeof(Ham::Player::Player))) Ham::Player::Player(s_Song, [](uint8_t RefreshRateInHz)
+    s_Player = ::new(allocator.Allocate(sizeof(Ham::Player::Player))) Ham::Player::Player(allocator, s_Song, [](uint8_t RefreshRateInHz)
     {
         SYS_ClearInterrupts();
         uint16_t divisor = PIT::CalculateDivisor(RefreshRateInHz);
@@ -1246,7 +1258,7 @@ int main(int argc, const char** argv)
         {
             WriteTickX();
             tick = currentTick;
-            LOG("Test", "WriteTick0: Updated Tick %i row %i on screen", currentTick, currentRow);
+            LOG("Test", "WriteTickX: Updated Tick %i row %i on screen", currentTick, currentRow);
         }
     } while (!Command.Quit);
 
