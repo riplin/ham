@@ -181,7 +181,6 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
             loopEnd = sampleLength;
 
         song->SetSampleLength(sample, 0, sampleLength, Song::SampleWidth::BitWidth8);
-        song->SetSampleFineTune(sample, 0, fineTune);
         song->SetInstrumentMiddleC(sample, Song::ConvertFineTuneToPeriod(fineTune));
         song->SetSampleVolume(sample, 0, volume);
         song->SetSampleLoopStart(sample, 0, loopStart);
