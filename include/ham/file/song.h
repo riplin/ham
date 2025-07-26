@@ -97,6 +97,17 @@ namespace SubEffect
     };
 }
 
+typedef uint8_t Volume_t;
+namespace Volume
+{
+    enum
+    {
+        Min = 0x00,
+        Max = 0x40,
+        NotSet = 0xFF
+    };
+}
+
 #pragma pack(push, 1)
 
 class Song final
@@ -111,6 +122,7 @@ public:
         uint16_t Note;      // 0...35, 0xffff = not set.
         Effect_t Effect;    // 0 based. Effect = Parameter = 0 = not set.
         uint8_t Parameter;  // Interpreted based on Effect. Effect = Parameter = 0 = not set.
+        uint8_t Volume;     // 0...64, 0xFF = not set.
     };
 
     enum SampleWidth : uint8_t

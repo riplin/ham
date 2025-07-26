@@ -242,6 +242,9 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
         }
     }
 
+    if (m_Note->Volume != Volume::NotSet)
+        m_Channels[channel].Volume = m_Note->Volume;
+
     if ((m_Note->Effect != 0x00) || (m_Note->Parameter != 0x00))
     {
         switch(m_Note->Effect)

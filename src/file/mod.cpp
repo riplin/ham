@@ -245,6 +245,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
                 note.Effect = data[2] & 0x0f;
                 note.Parameter = data[3];
                 note.Note = 0xFFFF;
+                note.Volume = Volume::NotSet;
 
                 song->SetNote(pattern, row, channel, note);
             }
