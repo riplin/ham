@@ -68,7 +68,21 @@ namespace Effect
         SetVolume = 0x0C,
         PatternBreak = 0x0D,
         MoreEffects = 0x0E, // -> SubEffect
-        SetSpeed = 0x0F
+        SetSpeed = 0x0F,
+
+        //Scream Tracker 3.x effects
+        SetSpeedEx = 0x10,                      // 
+        VolumeSlideEx = 0x11,
+        PortamentoDownEx = 0x12,
+        PortamentoUpEx = 0x13,
+        Tremor = 0x14,
+        VibratoAndVolumeSlideEx = 0x15,
+        PortamentoAndVolumeSlideEx = 0x16,
+        RetriggerAndVolumeSlide = 0x17,
+        SetTempo = 0x18,
+        FineVibrato = 0x19,
+        GlobalVolume = 0x1a,
+        StereoControl = 0x1b,
     };
 }
 
@@ -85,7 +99,7 @@ namespace SubEffect
         SetVibratoWaveform = 0x40,
         SetFinetune = 0x50,
         PatternLoop = 0x60,
-        SetTremoloWaveForm = 0x70,
+        SetTremoloWaveform = 0x70,
         FinePanning = 0x80,
         RetriggerNote = 0x90,
         FineVolumeSlideUp = 0xA0,
@@ -148,7 +162,7 @@ public:
         uint32_t Length;    // Length in samples minus one.
         uint32_t LoopStart; // Start of loop in samples.
         uint32_t LoopEnd;   // End of loop in samples. Points 1 byte after loop end!
-        char Name[23];      // 0 terminated string.
+        char Name[28];      // 0 terminated string.
         SampleWidth Width;  // Bit width of sample.
         uint8_t Volume;     // Default sample volume (0...64 included). TODO: change scale?
 
@@ -159,9 +173,13 @@ public:
     inline uint8_t GetSpeed() const { return m_Speed; }
     inline uint8_t GetBpm() const { return m_Bpm; }
     inline uint8_t GetVolume() const { return m_Volume; }
+
     inline uint8_t GetChannelCount() const { return m_ChannelCount; }
+    inline uint8_t GetChannelBalance(uint8_t channel) const { return (channel < m_ChannelCount) ? m_Channels[channel].Balance : 0x07; }
+
     inline uint16_t GetOrderCount() const { return m_OrderCount; }
     inline uint16_t GetOrder(uint16_t order) const { return (order < m_OrderCount) ? m_Orders[order] : 0; }
+
     inline uint16_t GetPatternCount() const { return m_PatternCount; }
     inline uint16_t GetPatternRowCount(uint16_t pattern) const { return (pattern < m_PatternCount) ? m_Patterns[pattern].RowCount : 0; }
     const NoteData* GetPatternNotes(uint16_t pattern) const;
@@ -191,8 +209,9 @@ protected:
     void SetVolume(uint8_t volume);
 
     void SetChannelCount(uint8_t channelCount);
-    void SetInstrumentCount(uint16_t instrumentCount);
+    void SetChannelBalance(uint8_t channel, uint8_t balance);
 
+    void SetInstrumentCount(uint16_t instrumentCount);
     void SetInstrumentName(uint16_t instrument, const char* name, uint8_t maxLength);
     void SetInstrumentMiddleC(uint16_t instrument, uint16_t middleC);
 
@@ -243,7 +262,7 @@ private:
     struct Instrument
     {
         Sample* Samples;
-        char Name[23];          // 0 terminated string.
+        char Name[28];          // 0 terminated string.
         uint16_t SampleCount;
         uint16_t MiddleC;       // Middle C period.
     };
@@ -254,15 +273,14 @@ private:
         uint16_t RowCount;
     };
 
-    enum Tracker : uint8_t
+    struct Channel
     {
-        ProTracker = 0x00,
-        TakeTracker = 0x01,
-        FastTracker = 0x02
+        uint8_t Balance;
     };
 
     Has::IAllocator&    m_Allocator;
     char                m_Name[28];
+    Channel*            m_Channels;
     uint16_t*           m_Orders;
     Instrument*         m_Instruments;
     Pattern*            m_Patterns;

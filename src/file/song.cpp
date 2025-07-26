@@ -10,6 +10,7 @@ namespace Ham::File
 
 Song::Song(Has::IAllocator& allocator)
     : m_Allocator(allocator)
+    , m_Channels(nullptr)
     , m_Orders(nullptr)
     , m_Instruments(nullptr)
     , m_Patterns(nullptr)
@@ -60,10 +61,55 @@ void Song::Destroy(Song* song)
 
 void Song::SetChannelCount(uint8_t channelCount)
 {
-    m_ChannelCount = channelCount;
-    //TODO: Go through the patterns and resize.
+    using namespace Has;
 
-    LOG("Song", "Channel count set to: %i", m_ChannelCount);
+    if (channelCount != m_ChannelCount)
+    {
+        auto* oldChannels = m_Channels;
+        auto oldChannelCount = m_ChannelCount;
+        m_ChannelCount = channelCount;
+        m_Channels = nullptr;
+
+        if (m_ChannelCount != 0)
+        {
+            m_Channels = m_Allocator.AllocateAs<std::remove_reference<decltype(*m_Channels)>::type>(sizeof(*m_Channels) * m_ChannelCount);
+            if (m_Channels == nullptr)
+            {
+                m_ChannelCount = 0;
+
+                LOG("Song", "Could not allocate memory for %i channels", channelCount);
+                return;
+            }
+            memset(m_Channels, 0, sizeof(*m_Channels) * m_ChannelCount);
+        }
+
+        if ((oldChannels != nullptr) && (m_Channels != nullptr))
+        {
+            uint16_t copyCount = min<uint16_t>(oldChannelCount, channelCount);
+            memcpy(m_Channels, oldChannels, copyCount * sizeof(m_Channels[0]));
+        }
+
+        if (oldChannels != nullptr)
+        {
+            m_Allocator.Free(oldChannels);
+        }
+
+
+
+        //TODO: Go through the patterns and resize.
+
+        LOG("Song", "Channel count set to: %i", m_ChannelCount);
+    }
+}
+
+void Song::SetChannelBalance(uint8_t channel, uint8_t balance)
+{
+    if (channel < m_ChannelCount)
+    {
+        m_Channels[channel].Balance = balance;
+
+        LOG("Song", "Channel %i balance set to %i", channel, balance);
+    }
 }
 
 void Song::SetName(const char* name, uint8_t maxLength)
@@ -80,7 +126,7 @@ void Song::SetName(const char* name, uint8_t maxLength)
         ++idx;
     }
 
-    LOG("Song", "Name set to: %s", m_Name);
+    LOG("Song", "Name set to: [%s]", m_Name);
 }
 
 void Song::SetSpeed(uint8_t speed)
@@ -167,7 +213,7 @@ void Song::SetInstrumentName(uint16_t instrument, const char* name, uint8_t maxL
             ++idx;
         }
 
-        LOG("Song", "Instrument %i name set to %s", instrument, m_Instruments[instrument].Name);
+        LOG("Song", "Instrument %i name set to [%s]", instrument, m_Instruments[instrument].Name);
     }
 }
 
@@ -245,7 +291,7 @@ void Song::SetSampleName(uint16_t instrument, uint16_t sample, const char* name,
             ++idx;
         }
 
-        LOG("Song", "Instrument %i sample %i name set to %s", instrument, sample, m_Instruments[instrument].Samples[sample].Name);
+        LOG("Song", "Instrument %i sample %i name set to [%s]", instrument, sample, m_Instruments[instrument].Samples[sample].Name);
     }
 }
 

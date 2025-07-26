@@ -103,6 +103,12 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     }
     
     song->SetChannelCount(channelCount);
+
+    for (uint8_t channel = 0; channel < channelCount; ++channel)
+    {
+        song->SetChannelBalance(channel, ((channel & 1) == 0) ? 0x03 : 0x0C);
+    }
+
     song->SetInstrumentCount(sampleCount);
     song->SetSpeed(6);
     song->SetBpm(125);

@@ -125,34 +125,34 @@ void Player::Reset()
 
     m_Note = m_Song->GetPatternNotes(m_Song->GetOrder(m_OrderIndex));
 
-    for (uint8_t i = 0; i < sizeof(m_Channels) / sizeof(Channel); ++i)
+    for (uint8_t channel = 0; channel < m_Song->GetChannelCount(); ++channel)
     {
-        m_Channels[i].SampleBegin = 0;
-        m_Channels[i].SampleLoopStart = 0;
-        m_Channels[i].SampleLoopEnd = 0;
-        m_Channels[i].Period = 0;
-        m_Channels[i].PortaTarget = 0;
-        m_Channels[i].Volume = 0;
-        m_Channels[i].Note = 0;
-        m_Channels[i].PortaSpeed = 0;
-        m_Channels[i].SampleOffset = 0;
-        m_Channels[i].Balance = ((i & 1) == 0) ? 0x03 : 0x0C;//L, R, L, R, ...
-        m_Channels[i].Parameter = 0;
-        m_Channels[i].Sample = 1;
-        m_Channels[i].LoopTarget = 0;
-        m_Channels[i].LoopCounter = 0;
-        m_Channels[i].VibratoDepth = 0;
-        m_Channels[i].VibratoSpeed = 0;
-        m_Channels[i].VibratoPosition = 0;
-        m_Channels[i].VibratoWaveType = WaveType::Sine;
-        m_Channels[i].TremoloDepth = 0;
-        m_Channels[i].TremoloSpeed = 0;
-        m_Channels[i].TremoloPosition = 0;
-        m_Channels[i].TremoloWaveType = WaveType::Sine;
-        m_Channels[i].Mute = false;
+        m_Channels[channel].SampleBegin = 0;
+        m_Channels[channel].SampleLoopStart = 0;
+        m_Channels[channel].SampleLoopEnd = 0;
+        m_Channels[channel].Period = 0;
+        m_Channels[channel].PortaTarget = 0;
+        m_Channels[channel].Volume = 0;
+        m_Channels[channel].Note = 0;
+        m_Channels[channel].PortaSpeed = 0;
+        m_Channels[channel].SampleOffset = 0;
+        m_Channels[channel].Balance = m_Song->GetChannelBalance(channel);//((i & 1) == 0) ? 0x03 : 0x0C;//L, R, L, R, ...
+        m_Channels[channel].Parameter = 0;
+        m_Channels[channel].Sample = 1;
+        m_Channels[channel].LoopTarget = 0;
+        m_Channels[channel].LoopCounter = 0;
+        m_Channels[channel].VibratoDepth = 0;
+        m_Channels[channel].VibratoSpeed = 0;
+        m_Channels[channel].VibratoPosition = 0;
+        m_Channels[channel].VibratoWaveType = WaveType::Sine;
+        m_Channels[channel].TremoloDepth = 0;
+        m_Channels[channel].TremoloSpeed = 0;
+        m_Channels[channel].TremoloPosition = 0;
+        m_Channels[channel].TremoloWaveType = WaveType::Sine;
+        m_Channels[channel].Mute = false;
 
-        Function::System::ResetVoice(i);
-        Function::System::SetPan(i, m_Channels[i].Balance);
+        Function::System::ResetVoice(channel);
+        Function::System::SetPan(channel, m_Channels[channel].Balance);
     }
 
     for (uint8_t instrument = 0; instrument < m_Song->GetInstrumentCount(); ++instrument)
@@ -368,7 +368,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
                     }
                 }
                 break;
-            case SubEffect::SetTremoloWaveForm:// 5.23 Effect E7x (Set Tremolo WaveForm)
+            case SubEffect::SetTremoloWaveform:// 5.23 Effect E7x (Set Tremolo WaveForm)
                 m_Channels[channel].TremoloWaveType = WaveType(m_Note->Parameter & 0x07);
                 break;
             case SubEffect::FinePanning:// 5.24 Effect E8x (16 Position Panning)
@@ -408,9 +408,11 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
 
     if (sampleDirty)
     {
-        GF1::Voice::VoiceControl_t voiceControl = GF1::Voice::VoiceControl::Bits8 |
-                                                GF1::Voice::VoiceControl::Forward |
+        GF1::Voice::VoiceControl_t voiceControl = GF1::Voice::VoiceControl::Forward |
                                                 GF1::Voice::VoiceControl::Play;
+
+        if (m_Song->GetSample(m_Channels[channel].Sample - 1, 0)->Width == Song::BitWidth16)
+            voiceControl |= GF1::Voice::VoiceControl::Bits16;
 
         if (m_Song->GetSample(m_Channels[channel].Sample - 1, 0)->LoopEnd != 0)
             voiceControl |= GF1::Voice::VoiceControl::LoopToBegin;

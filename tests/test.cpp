@@ -1,9 +1,13 @@
 //Copyright 2025-Present riplin
 
-#include <conio.h>
+#include <string>
+#include <vector>
 #include <stdio.h>
+#include <sstream>
+#include <iterator>
 #include <sys/nearptr.h>
 #include <ham/file/mod.h>
+#include <ham/file/s3m.h>
 #include <ham/file/song.h>
 #include <has/system/pic.h>
 #include <has/system/pit.h>
@@ -1102,6 +1106,51 @@ void WriteTickX()
     }
 }
 
+typedef uint8_t FileType_t;
+namespace FileType
+{
+    enum
+    {
+        Invalid = 0x00,
+        Mod = 0x01,
+        S3m = 0x02
+    };
+}
+
+
+void split(const std::string &s, char delim, std::vector<std::string>& result)
+{
+    std::istringstream iss(s);
+    std::string item;
+
+    while (std::getline(iss, item, delim))
+        if (!item.empty()) result.push_back(item);
+}
+
+std::string tolower(std::string s)
+{
+    std::transform(s.begin(), s.end(), s.begin(), [](uint8_t c){ return std::tolower(c); });
+    return s;
+}
+
+FileType_t DetermineFileType(const char* fileName)
+{
+    std::string name = tolower(fileName);
+
+    std::vector<std::string> items;
+    split(name, '.', items);
+    
+    if (!items.empty())
+    {
+        std::string ext = items[items.size() - 1];
+        if (ext == "mod")
+            return FileType::Mod;
+        if (ext == "s3m")
+            return FileType::S3m;
+    }
+    return FileType::Invalid;
+}
+
 void Handler()
 {
     s_Player->Tick();
@@ -1121,11 +1170,24 @@ int main(int argc, const char** argv)
 
     if (argc != 2)
     {
-        printf("test <modfile.mod>\n");
+        printf("test <musicfile.ext>\n");
+        printf("Where ext is: mod or s3m\n");
         return -1;
     }
-
-    s_Song = Mod::Load(allocator, argv[1]);
+    switch(DetermineFileType(argv[1]))
+    {
+    case FileType::Mod:
+        s_Song = Mod::Load(allocator, argv[1]);
+        s_Effect = s_Hex;
+        break;
+    case FileType::S3m:
+        s_Song = S3m::Load(allocator, argv[1]);
+        s_Effect = s_S3mEffect;
+        break;
+    default:
+        printf("Unknown file format: %s", argv[1]);
+        return -1;
+    }
 
     if (s_Song == nullptr)
     {
