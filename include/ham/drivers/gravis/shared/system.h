@@ -30,7 +30,8 @@ namespace Ham::Gravis::Shared::Function::System
         extern const char* ToString(InitializeError_t error);
     }
 
-    extern InitializeError_t Initialize(Has::IAllocator& allocator, uint8_t activeVoices);
+    extern InitializeError_t Initialize(Has::IAllocator& allocator);
+    extern void Configure(uint8_t activeVoices);
     extern void Shutdown();
 
     typedef std::function<void(void)> TimerCallback_t;
@@ -63,7 +64,7 @@ namespace Ham::Gravis::Shared::Function::System
     extern void SetVolume(GF1::Page_t voice, GF1::Voice::CurrentVolume_t volume);
     extern void SetLinearVolume(GF1::Page_t voice, uint16_t volume);
 
-    extern void SetPlaybackFrequency(GF1::Page_t voice, uint16_t frequencyInKHz, uint16_t activeVoices);
+    extern void SetPlaybackFrequency(GF1::Page_t voice, uint16_t frequencyInHz, uint16_t activeVoices);
 
     extern void SetPan(GF1::Page_t voice, GF1::Voice::PanPosition_t pan);
 

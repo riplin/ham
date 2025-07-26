@@ -18,6 +18,9 @@ Song::Song(Has::IAllocator& allocator)
     , m_OrderCount(0)
     , m_PatternCount(0)
     , m_ChannelCount(0)
+    , m_Speed(0)
+    , m_Bpm(0)
+    , m_Volume(0)
 {
     memset(m_Name, 0, sizeof(m_Name));
     CalculateFastTrackerNotePeriods();
@@ -80,6 +83,24 @@ void Song::SetName(const char* name, uint8_t maxLength)
     }
 
     LOG("Song", "Name set to: %s", m_Name);
+}
+
+void Song::SetSpeed(uint8_t speed)
+{
+    m_Speed = speed;
+    LOG("Song", "Speed set to %i", m_Speed);
+}
+
+void Song::SetBpm(uint8_t bpm)
+{
+    m_Bpm = bpm;
+    LOG("Song", "Beats per minute set to %i", m_Bpm);
+}
+
+void Song::SetVolume(uint8_t volume)
+{
+    m_Volume = volume;
+    LOG("Song", "Volume set to %i", m_Volume);
 }
 
 void Song::SetInstrumentCount(uint16_t instrumentCount)

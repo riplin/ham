@@ -104,6 +104,9 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     
     song->SetChannelCount(channelCount);
     song->SetInstrumentCount(sampleCount);
+    song->SetSpeed(6);
+    song->SetBpm(125);
+    song->SetVolume(64);
     song->SetOrderCount(128);
 
     char name[20];

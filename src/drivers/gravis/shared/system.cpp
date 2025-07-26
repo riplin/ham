@@ -413,12 +413,12 @@ static unsigned int s_FrequencyPerVoice[19] =
     19293
 };
 
-void SetPlaybackFrequency(GF1::Page_t voice, uint16_t frequencyInKHz, uint16_t activeVoices)
+void SetPlaybackFrequency(GF1::Page_t voice, uint16_t frequencyInHz, uint16_t activeVoices)
 {
     using namespace Has;
     uint8_t voiceCount = max<uint8_t>(min<uint8_t>(activeVoices, 32), 14);
     uint32_t divisor = s_FrequencyPerVoice[voiceCount - 14];
-    uint32_t freq = ((uint32_t(frequencyInKHz) << 9) + (divisor >> 1)) / divisor;
+    uint32_t freq = ((uint32_t(frequencyInHz) << 9) + (divisor >> 1)) / divisor;
     freq <<= 1;
     
     SYS_ClearInterrupts();
@@ -1001,12 +1001,10 @@ void SetTimer2Handler(const TimerCallback_t& callback, uint8_t ticksPerSecond)
 
 bool s_Initialized = false;
 
-InitializeError_t Initialize(Has::IAllocator& allocator, uint8_t activeVoices)
+InitializeError_t Initialize(Has::IAllocator& allocator)
 {
     using namespace Has;
     using namespace Has::System;
-
-    activeVoices = min<uint8_t>(max<uint8_t>(activeVoices, 14), 32);
 
     if (s_Initialized)
         return InitializeError::AlreadyInitialized;
@@ -1029,7 +1027,7 @@ InitializeError_t Initialize(Has::IAllocator& allocator, uint8_t activeVoices)
         {
             LOG("Gravis", "Card detected");
 
-            ResetCard(baseAddress, activeVoices);
+            ResetCard(baseAddress, 14);
             InitializeCard(baseAddress, playDma, recordDma, gf1Interrupt, midiInterrupt);
             // InterruptTable::SetupHandler(s_UltrasoundInterrupt, UltrasoundInterruptHandler);
             // if (s_UltrasoundInterrupt != s_MidiInterrupt)
@@ -1046,6 +1044,14 @@ InitializeError_t Initialize(Has::IAllocator& allocator, uint8_t activeVoices)
     }
 
     return ret;
+}
+
+void Configure(uint8_t activeVoices)
+{
+    if (s_Initialized)
+    {
+        ResetCard(s_BaseAddress, activeVoices);
+    }
 }
 
 void Shutdown()

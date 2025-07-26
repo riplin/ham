@@ -48,6 +48,55 @@
 namespace Ham::File
 {
 
+typedef uint8_t Effect_t;
+namespace Effect
+{
+    enum
+    {
+        Arpeggio = 0x00,
+        PortamentoUp = 0x01,
+        PortamentoDown = 0x02,
+        PortamentoToNote = 0x03,
+        Vibrato = 0x04,
+        PortamentoAndVolumeSlide = 0x05,
+        VibratoAndVolumeSlide = 0x06,
+        Tremolo = 0x07,
+        Pan = 0x08,
+        SampleOffset = 0x09,
+        VolumeSlide = 0x0A,
+        JumpToPattern = 0x0B,
+        SetVolume = 0x0C,
+        PatternBreak = 0x0D,
+        MoreEffects = 0x0E, // -> SubEffect
+        SetSpeed = 0x0F
+    };
+}
+
+typedef uint8_t SubEffect_t;
+namespace SubEffect
+{
+    enum
+    {
+        Mask = 0xF0,
+        SetFilter = 0x00,
+        FinePortaUp = 0x10,
+        FinePortaDown = 0x20,
+        GlissandoControl = 0x30,
+        SetVibratoWaveform = 0x40,
+        SetFinetune = 0x50,
+        PatternLoop = 0x60,
+        SetTremoloWaveForm = 0x70,
+        FinePanning = 0x80,
+        RetriggerNote = 0x90,
+        FineVolumeSlideUp = 0xA0,
+        FineVolumeSlideDown = 0xB0,
+        CutNote = 0xC0,
+        DelayNote = 0xD0,
+        PatternDelay = 0xE0,
+        InvertLoop = 0xF0
+    };
+}
+
 #pragma pack(push, 1)
 
 class Song final
@@ -60,7 +109,7 @@ public:
         uint8_t Instrument; // 0 = not set. Starts counting at 1. Subtract 1 to get sample index.
         uint16_t Period;    // Amiga period. 0 = not set
         uint16_t Note;      // 0...35, 0xffff = not set.
-        uint8_t Effect;     // 0 based. Effect = Parameter = 0 = not set.
+        Effect_t Effect;    // 0 based. Effect = Parameter = 0 = not set.
         uint8_t Parameter;  // Interpreted based on Effect. Effect = Parameter = 0 = not set.
     };
 
@@ -85,48 +134,10 @@ public:
         inline uint8_t WidthInBytes() const { return (Width + 7) >> 3; }
     };
 
-    enum Effect : uint8_t
-    {
-        Arpeggio = 0x00,
-        PortamentoUp = 0x01,
-        PortamentoDown = 0x02,
-        PortamentoToNote = 0x03,
-        Vibrato = 0x04,
-        PortamentoAndVolumeSlide = 0x05,
-        VibratoAndVolumeSlide = 0x06,
-        Tremolo = 0x07,
-        Pan = 0x08,
-        SampleOffset = 0x09,
-        VolumeSlide = 0x0A,
-        JumpToPattern = 0x0B,
-        SetVolume = 0x0C,
-        PatternBreak = 0x0D,
-        MoreEffects = 0x0E, // -> SubEffect
-        SetSpeed = 0x0F
-    };
-
-    enum SubEffect : uint8_t
-    {
-        Mask = 0xF0,
-        SetFilter = 0x00,
-        FinePortaUp = 0x10,
-        FinePortaDown = 0x20,
-        GlissandoControl = 0x30,
-        SetVibratoWaveform = 0x40,
-        SetFinetune = 0x50,
-        PatternLoop = 0x60,
-        SetTremoloWaveForm = 0x70,
-        FinePanning = 0x80,
-        RetriggerNote = 0x90,
-        FineVolumeSlideUp = 0xA0,
-        FineVolumeSlideDown = 0xB0,
-        CutNote = 0xC0,
-        DelayNote = 0xD0,
-        PatternDelay = 0xE0,
-        InvertLoop = 0xF0
-    };
-
     inline const char* GetName() const {return m_Name; }
+    inline uint8_t GetSpeed() const { return m_Speed; }
+    inline uint8_t GetBpm() const { return m_Bpm; }
+    inline uint8_t GetVolume() const { return m_Volume; }
     inline uint8_t GetChannelCount() const { return m_ChannelCount; }
     inline uint16_t GetOrderCount() const { return m_OrderCount; }
     inline uint16_t GetOrder(uint16_t order) const { return (order < m_OrderCount) ? m_Orders[order] : 0; }
@@ -154,6 +165,9 @@ protected:
     static Song* Create(Has::IAllocator& allocator);
 
     void SetName(const char* name, uint8_t maxLength);
+    void SetSpeed(uint8_t speed);
+    void SetBpm(uint8_t bpm);
+    void SetVolume(uint8_t volume);
 
     void SetChannelCount(uint8_t channelCount);
     void SetInstrumentCount(uint16_t instrumentCount);
@@ -235,6 +249,9 @@ private:
     uint16_t            m_OrderCount;
     uint16_t            m_PatternCount;
     uint8_t             m_ChannelCount;
+    uint8_t             m_Speed;
+    uint8_t             m_Bpm;
+    uint8_t             m_Volume;
     Tracker             m_Tracker;
 
     uint32_t SetNotes(Tracker tracker);

@@ -95,8 +95,6 @@ private:
         int16_t Period;
         uint16_t PortaTarget;
         int16_t Volume;
-        int16_t VolumeTarget;
-        int16_t VolumeDelta;
         uint16_t Note;
         uint16_t PortaSpeed;
         uint8_t SampleOffset;
@@ -136,13 +134,15 @@ private:
 
     uint8_t m_PatternDelay;
 
-    uint8_t m_CurrentTick;
-    uint16_t m_CurrentRow;
-    uint16_t m_CurrentOrderIndex;
+    uint8_t m_Tick;
+    uint16_t m_Row;
+    uint16_t m_OrderIndex;
 
-    uint8_t m_NextSpeed;
-    uint8_t m_NextBpm;
-    const File::Song::Note* m_CurrentNote;
+    uint8_t m_CurrentTick;
+    uint8_t m_CurrentRow;
+    uint8_t m_CurrentOrderIndex;
+
+    const File::Song::Note* m_Note;
 
     uint32_t m_MemoryRemaining[4];
 

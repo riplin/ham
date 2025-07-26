@@ -801,8 +801,8 @@ void WriteStatic()
     FillRectangle(0, 29, width - 1, 29, ' ', (Colors::DarkRoyalPurple << 4) | Colors::White, width);
 
     // Song info
-    DrawBorder(7, 1, 28, 5, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
-    FillRectangle(8, 2, 27, 4, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, width);
+    DrawBorder(7, 1, 33, 5, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
+    FillRectangle(8, 2, 32, 4, ' ', (Colors::DarkerRoyalPurple << 4) | Colors::Cream, width);
 
     // VU meters
     DrawBorder(62, 2, 79, 8, (Colors::DarkRoyalPurple << 4) | Colors::DarkerRoyalPurple, width);
@@ -1135,8 +1135,8 @@ int main(int argc, const char** argv)
 
     WriteStatic();
 
-    auto result = Function::System::Initialize(allocator, s_Song->GetChannelCount());
-
+    auto result = Function::System::Initialize(allocator);
+    
     if (result != Function::System::InitializeError::Success)
     {
         printf("Error: %s\n", Function::System::InitializeError::ToString(result));
@@ -1144,6 +1144,8 @@ int main(int argc, const char** argv)
         s_Song = nullptr;
         return -1;
     }
+
+    Function::System::Configure(s_Song->GetChannelCount());
 
     s_Player = ::new(allocator.Allocate(sizeof(Ham::Player::Player))) Ham::Player::Player(s_Song, [](uint8_t RefreshRateInHz)
     {
@@ -1228,20 +1230,23 @@ int main(int argc, const char** argv)
             Command.Pause = false;
         }
 
-        bool updateTick0 = (row != s_Player->GetCurrentRow()) && s_Player->GetCurrentRow() != (s_Song->GetPatternRowCount(s_Song->GetOrder(s_Player->GetCurrentOrderIndex()) + 1));
-        bool updateTickX = updateTick0 || (tick != s_Player->GetCurrentTick()  && s_Player->GetCurrentRow() != 64);
+        SYS_ClearInterrupts();
+        uint8_t currentTick = s_Player->GetCurrentTick();
+        uint8_t currentRow = s_Player->GetCurrentRow();
+        SYS_RestoreInterrupts();
 
-        if (updateTick0)
+        if ((row != currentRow) && (currentTick == 0))
         {
             WriteTick0();
-            row = s_Player->GetCurrentRow();
-            LOG("Test", "WriteTick0: Updated Tick %i on screen", s_Player->GetCurrentTick());
+            row = currentRow;
+            LOG("Test", "WriteTick0: Updated Tick %i row %i on screen", currentTick, currentRow);
         }
-        if (updateTickX)
+
+        if (tick != currentTick)
         {
             WriteTickX();
-            tick = s_Player->GetCurrentTick();
-            LOG("Test", "WriteTickX: Updated Tick %i on screen", tick);
+            tick = currentTick;
+            LOG("Test", "WriteTick0: Updated Tick %i row %i on screen", currentTick, currentRow);
         }
     } while (!Command.Quit);
 
