@@ -20,9 +20,11 @@
 #include <hag/drivers/vga/vga.h>
 #include <hag/drivers/vga/modeset.h>
 #include <ham/drivers/gravis/shared/system.h>
-#include <ham/drivers/gravis/shared/gf1/voice/actvvoc.h>
+
+#include <ham/drivers/gravis/gus/driver.h>
 
 Ham::File::Song* s_Song = nullptr;
+Ham::Driver::Base* s_Driver = nullptr;
 Ham::Player::Player* s_Player = nullptr;
 
 uint8_t palette[16 * 3] =
@@ -1174,6 +1176,7 @@ int main(int argc, const char** argv)
         printf("Where ext is: mod or s3m\n");
         return -1;
     }
+
     switch(DetermineFileType(argv[1]))
     {
     case FileType::Mod:
@@ -1195,6 +1198,29 @@ int main(int argc, const char** argv)
         return -1;
     }
 
+    if (Ham::Gravis::Gus::Driver::Detect())
+    {
+        s_Driver = Ham::Gravis::Gus::Driver::Create(allocator);
+        auto result = s_Driver->Initialize();
+        if (result != Ham::Driver::Result::Success)
+        {
+            printf("Error: %s\n", s_Driver->ResultToString(result));
+            Song::Destroy(s_Song);
+            s_Song = nullptr;
+            Ham::Driver::Base::Destroy(s_Driver);
+            s_Driver = nullptr;
+            return -1;
+        }
+    }
+
+    if (s_Driver == nullptr)
+    {
+        printf("No sound device found\n");
+        Song::Destroy(s_Song);
+        s_Song = nullptr;
+        return -1;
+    }
+
     LOG("Test", "Initializing VGA driver");
     if (!VGA::ModeSetting::Initialize(allocator))
     {
@@ -1209,19 +1235,9 @@ int main(int argc, const char** argv)
 
     WriteStatic();
 
-    auto result = Function::System::Initialize(allocator);
-    
-    if (result != Function::System::InitializeError::Success)
-    {
-        printf("Error: %s\n", Function::System::InitializeError::ToString(result));
-        Song::Destroy(s_Song);
-        s_Song = nullptr;
-        return -1;
-    }
+    s_Driver->SetActiveVoices(s_Song->GetChannelCount());
 
-    Function::System::Configure(s_Song->GetChannelCount());
-
-    s_Player = ::new(allocator.Allocate(sizeof(Ham::Player::Player))) Ham::Player::Player(allocator, s_Song, [](uint8_t RefreshRateInHz)
+    s_Player = ::new(allocator.Allocate(sizeof(Ham::Player::Player))) Ham::Player::Player(allocator, *s_Driver, *s_Song, [](uint8_t RefreshRateInHz)
     {
         SYS_ClearInterrupts();
         uint16_t divisor = PIT::CalculateDivisor(RefreshRateInHz);

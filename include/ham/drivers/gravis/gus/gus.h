@@ -1,8 +1,110 @@
+//Copyright 2025-Present riplin
 
+#pragma once
 
+#include <has/imports.h>
 
+#include <ham/drivers/gravis/shared/gf1/data.h>
+#include <ham/drivers/gravis/shared/gf1/dmactrl.h>
+#include <ham/drivers/gravis/shared/gf1/dramio.h>
+#include <ham/drivers/gravis/shared/gf1/index.h>
+#include <ham/drivers/gravis/shared/gf1/intrctrl.h>
+#include <ham/drivers/gravis/shared/gf1/intrstat.h>
+#include <ham/drivers/gravis/shared/gf1/mixcrtl.h>
+#include <ham/drivers/gravis/shared/gf1/mixrctrl.h>
+#include <ham/drivers/gravis/shared/gf1/mixrdata.h>
+#include <ham/drivers/gravis/shared/gf1/page.h>
+#include <ham/drivers/gravis/shared/gf1/regctrl.h>
+#include <ham/drivers/gravis/shared/gf1/revlvl.h>
+#include <ham/drivers/gravis/shared/gf1/tmrctrl.h>
+#include <ham/drivers/gravis/shared/gf1/tmrdata.h>
 
+#include <ham/drivers/gravis/shared/gf1/global/dmastadd.h>
+#include <ham/drivers/gravis/shared/gf1/global/dramdma.h>
+#include <ham/drivers/gravis/shared/gf1/global/dramioad.h>
+#include <ham/drivers/gravis/shared/gf1/global/jstrdac.h>
+#include <ham/drivers/gravis/shared/gf1/global/reset.h>
+#include <ham/drivers/gravis/shared/gf1/global/smpctrl.h>
+#include <ham/drivers/gravis/shared/gf1/global/smpfrq.h>
+#include <ham/drivers/gravis/shared/gf1/global/tmrcnt.h>
+#include <ham/drivers/gravis/shared/gf1/global/tmrctrl.h>
 
+#include <ham/drivers/gravis/shared/gf1/voice/actvvoc.h>
+#include <ham/drivers/gravis/shared/gf1/voice/curloc.h>
+#include <ham/drivers/gravis/shared/gf1/voice/curvol.h>
+#include <ham/drivers/gravis/shared/gf1/voice/endloc.h>
+#include <ham/drivers/gravis/shared/gf1/voice/frqctrl.h>
+#include <ham/drivers/gravis/shared/gf1/voice/intrsrc.h>
+#include <ham/drivers/gravis/shared/gf1/voice/panpos.h>
+#include <ham/drivers/gravis/shared/gf1/voice/startloc.h>
+#include <ham/drivers/gravis/shared/gf1/voice/vocctrl.h>
+#include <ham/drivers/gravis/shared/gf1/voice/volrmp.h>
+#include <ham/drivers/gravis/shared/gf1/voice/volrmpct.h>
+#include <ham/drivers/gravis/shared/gf1/voice/volrmprt.h>
+
+#include <ham/drivers/gravis/shared/midi/control.h>
+#include <ham/drivers/gravis/shared/midi/data.h>
+#include <ham/drivers/gravis/shared/midi/status.h>
+
+#include <ham/drivers/gravis/shared/system.h>
+
+namespace Ham::Gravis::Gus
+{
+
+    HAM_GRAVIS_SYSTEM;
+
+    IMPORTNAMESPACE(Shared::GF1, Data);
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, DmaControl);
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, DramIO);
+    IMPORTNAMESPACEANDTYPE(Shared::GF1, Index);
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, InterruptControl);
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, InterruptStatus);
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, MixControl);
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, MixerControl);
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, MixerData);
+    IMPORTNAMESPACEANDTYPE(Shared::GF1, Page);
+    IMPORTNAMESPACEANDTYPE(Shared::GF1, RegisterControl);
+    IMPORTNAMESPACEANDTYPE(Shared::GF1, RevisionLevel);
+    IMPORTNAMESPACEANDTYPE(Shared::GF1, TimerControl);
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, TimerData);
+
+    namespace Global
+    {
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Global, DmaStartAddress);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Global, DramDmaControl);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Global, DramIOAddress);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Global, JoyStickTrimDac);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Global, Reset);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Global, SamplingControl);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Global, SamplingFrequency);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Global, TimerCount);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Global, TimerControl);
+    }
+
+    namespace Voice
+    {
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, ActiveVoices);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, CurrentLocation);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, CurrentVolume);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, EndLocation);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, FrequencyControl);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, InterruptSource);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, PanPosition);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, StartLocation);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, VoiceControl);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, VolumeRamp);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, VolumeRampControl);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1::Voice, VolumeRampRate);
+    }
+
+    namespace Midi
+    {
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::Midi, Control);
+        IMPORTNAMESPACEANDTYPE(Shared::Midi, Data);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::Midi, Status);
+    }
+
+}
 
 // INTERFACE                           I/O,MEM,    R,W     ADDRESS
 //                                     INT,DMA             HEX

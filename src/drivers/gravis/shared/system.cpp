@@ -218,6 +218,7 @@ uint8_t s_PlayDMA = 0;
 uint8_t s_RecordDMA = 0;
 uint8_t s_UltrasoundInterrupt = 0;
 uint8_t s_MidiInterrupt = 0;
+uint32_t s_MemoryBanks[4] = { 0 };
 
 static GF1::InterruptControl_t s_InterruptLatchValues[16] =
 {
@@ -496,6 +497,51 @@ void ResumeVoice(GF1::Page_t voice)
     SYS_RestoreInterrupts();
 }
 
+void ResetMemoryManagement()
+{
+    WriteMemory(s_BaseAddress, 0 << GF1::Global::DramIOAddress::Shift::BankSelect, 0x55);
+    WriteMemory(s_BaseAddress, 1 << GF1::Global::DramIOAddress::Shift::BankSelect, 0xAA);
+    WriteMemory(s_BaseAddress, 2 << GF1::Global::DramIOAddress::Shift::BankSelect, 0x3C);
+    WriteMemory(s_BaseAddress, 3 << GF1::Global::DramIOAddress::Shift::BankSelect, 0xC3);
+    GF1::DramIO_t value0 = ReadMemory(s_BaseAddress,  0 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    GF1::DramIO_t value1 = ReadMemory(s_BaseAddress,  1 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    GF1::DramIO_t value2 = ReadMemory(s_BaseAddress,  2 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    GF1::DramIO_t value3 = ReadMemory(s_BaseAddress,  3 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    if (value0 == 0x55) s_MemoryBanks[0] = (256 * 1024) - 32; //32 bytes of memory for silence.
+    if (value1 == 0xAA) s_MemoryBanks[1] = 256 * 1024;
+    if (value2 == 0x3C) s_MemoryBanks[2] = 256 * 1024;
+    if (value3 == 0xC3) s_MemoryBanks[3] = 256 * 1024;
+}
+
+uint32_t AllocateMemory(uint32_t size)
+{
+    using namespace Has;
+    using namespace Ham::Gravis::Shared;
+
+    size = alignup<uint32_t>(size, 32);
+    for (uint32_t i = 0; i < sizeof(s_MemoryBanks) / sizeof(*s_MemoryBanks); ++i)
+    {
+        if (s_MemoryBanks[i] >= size)
+        {
+            uint32_t addr = GF1::Global::DramIOAddress::BankSize - s_MemoryBanks[i];
+            addr |= i << GF1::Global::DramIOAddress::Shift::BankSelect;
+            s_MemoryBanks[i] -= size;
+            return addr;
+        }
+    }
+    return 0;
+}
+
+uint32_t GetAvailableMemory()
+{
+    uint32_t ret = 0;
+    for (uint8_t bank = 0; bank < (sizeof(s_MemoryBanks) / sizeof(*s_MemoryBanks)); ++bank)
+    {
+        ret += s_MemoryBanks[bank];
+    }
+    return ret;
+}
+
 void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, uint8_t gf1Interrupt, uint8_t midiInterrupt)
 {
     s_BaseAddress = baseAddress;
@@ -573,6 +619,8 @@ void InitializeCard(Register_t baseAddress, uint8_t playDma, uint8_t recordDma, 
 
     //Enable DAC, enable interrupts.
     GF1::Global::Reset::Write(baseAddress, GF1::Global::Reset::MasterEnable | GF1::Global::Reset::DacEnable | GF1::Global::Reset::InterruptEnable);
+
+    ResetMemoryManagement();
 
     SYS_RestoreInterrupts();
 }
@@ -1071,6 +1119,42 @@ void Shutdown()
         s_Initialized = false;
         LOG("Gravis", "Card shut down");
     }
+}
+
+uint32_t GetMemorySize()
+{
+    // Preserve original values.
+    GF1::DramIO_t originalValue0 = ReadMemory(s_BaseAddress,  0 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    GF1::DramIO_t originalValue1 = ReadMemory(s_BaseAddress,  1 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    GF1::DramIO_t originalValue2 = ReadMemory(s_BaseAddress,  2 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    GF1::DramIO_t originalValue3 = ReadMemory(s_BaseAddress,  3 << GF1::Global::DramIOAddress::Shift::BankSelect);
+
+    // Write test patterns into the first byte of the banks.
+    WriteMemory(s_BaseAddress, 0 << GF1::Global::DramIOAddress::Shift::BankSelect, 0x55);
+    WriteMemory(s_BaseAddress, 1 << GF1::Global::DramIOAddress::Shift::BankSelect, 0xAA);
+    WriteMemory(s_BaseAddress, 2 << GF1::Global::DramIOAddress::Shift::BankSelect, 0x3C);
+    WriteMemory(s_BaseAddress, 3 << GF1::Global::DramIOAddress::Shift::BankSelect, 0xC3);
+
+    // Read back test patterns.
+    GF1::DramIO_t value0 = ReadMemory(s_BaseAddress,  0 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    GF1::DramIO_t value1 = ReadMemory(s_BaseAddress,  1 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    GF1::DramIO_t value2 = ReadMemory(s_BaseAddress,  2 << GF1::Global::DramIOAddress::Shift::BankSelect);
+    GF1::DramIO_t value3 = ReadMemory(s_BaseAddress,  3 << GF1::Global::DramIOAddress::Shift::BankSelect);
+
+    // Restore original values.
+    WriteMemory(s_BaseAddress, 0 << GF1::Global::DramIOAddress::Shift::BankSelect, originalValue0);
+    WriteMemory(s_BaseAddress, 1 << GF1::Global::DramIOAddress::Shift::BankSelect, originalValue1);
+    WriteMemory(s_BaseAddress, 2 << GF1::Global::DramIOAddress::Shift::BankSelect, originalValue2);
+    WriteMemory(s_BaseAddress, 3 << GF1::Global::DramIOAddress::Shift::BankSelect, originalValue3);
+
+    // Check which banks are available.
+    uint32_t banks = 0;
+    if (value0 == 0x55) ++banks;
+    if (value1 == 0xAA) ++banks;
+    if (value2 == 0x3C) ++banks;
+    if (value3 == 0xC3) ++banks;
+
+    return 256 * 1024 * banks;
 }
 
 }

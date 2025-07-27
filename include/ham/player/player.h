@@ -5,8 +5,8 @@
 #include <functional>
 #include <has/types.h>
 #include <has/ialloc.h>
+#include <ham/driver.h>
 #include <ham/file/song.h>
-#include <ham/drivers/gravis/shared/gf1/global/dramioad.h>
 
 namespace Ham::Player
 {
@@ -17,35 +17,25 @@ public:
 
     typedef std::function<void(uint8_t RefreshRateInHz)> SetRefreshRate_t;
 
-    inline Player(Has::IAllocator& allocator, Ham::File::Song* song, const SetRefreshRate_t& refreshRateCallback)
+    inline Player(Has::IAllocator& allocator, Ham::Driver::Base& driver, Ham::File::Song& song, const SetRefreshRate_t& refreshRateCallback)
         : m_Allocator(allocator)
         , m_RefreshRateCallback(refreshRateCallback)
+        , m_Driver(driver)
         , m_Song(song)
     {
-        using namespace Ham::Gravis::Shared;
-        //TODO: query the card for number of banks.
-        m_MemoryRemaining[0] = GF1::Global::DramIOAddress::BankSize - 32;
-        m_MemoryRemaining[1] = GF1::Global::DramIOAddress::BankSize;
-        m_MemoryRemaining[2] = GF1::Global::DramIOAddress::BankSize;
-        m_MemoryRemaining[3] = GF1::Global::DramIOAddress::BankSize;
-
-        m_InstrumentMiddleC = m_Allocator.AllocateAs<uint16_t>(sizeof(uint16_t) * m_Song->GetInstrumentCount());
+        m_InstrumentMiddleC = m_Allocator.AllocateAs<uint16_t>(sizeof(uint16_t) * m_Song.GetInstrumentCount());
 
         Reset();
         UploadSamples();
     }
 
     inline void Play() { Reset(); m_State = State::Playing; }
-
     void Tick();
-
     void Pause();
-
     void Resume();
+    inline void Stop() { Reset(); }
 
     inline bool IsPaused() const { return m_State == State::Paused; }
-
-    inline void Stop() { Reset(); }
 
     inline uint8_t GetSpeed() const { return m_Speed; }
     inline uint8_t GetBpm() const { return m_Bpm; }
@@ -66,8 +56,6 @@ private:
 
     void Reset();
     void UploadSamples();
-
-    uint32_t AllocateCardMemory(uint32_t size);
 
     void HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag);
     void HandleTickX(uint8_t channel);
@@ -121,7 +109,8 @@ private:
     uint32_t m_SampleAddress[31];//TODO: more generic!
     Channel m_Channels[32];
     SetRefreshRate_t m_RefreshRateCallback;
-    Ham::File::Song* m_Song;
+    Ham::Driver::Base& m_Driver;
+    Ham::File::Song& m_Song;
     uint16_t* m_InstrumentMiddleC;
 
     enum State : uint8_t
@@ -148,9 +137,6 @@ private:
 
     const File::Song::NoteData* m_Note;
 
-    uint32_t m_MemoryRemaining[4];
-
-    static uint16_t s_Volume[65];
     static uint8_t s_SineTable[32];
 };
 

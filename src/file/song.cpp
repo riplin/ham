@@ -365,15 +365,16 @@ bool Song::LoadSampleData(uint16_t instrument, uint16_t sample, Has::IStream& st
 {
     if ((instrument < m_InstrumentCount) && (sample < m_Instruments[instrument].SampleCount))
     {
-        if (!stream.Read(m_Instruments[instrument].Samples[sample].Length * m_Instruments[instrument].Samples[sample].WidthInBytes(), m_Instruments[instrument].Samples[sample].Data))
+        if (!stream.Read(m_Instruments[instrument].Samples[sample].Length, m_Instruments[instrument].Samples[sample].Data))
         {
-            LOG("Song", "Failed to load %i bytes of sample data", m_Instruments[instrument].Samples[sample].Length * m_Instruments[instrument].Samples[sample].WidthInBytes());
+            LOG("Song", "Failed to load %i bytes of sample data", m_Instruments[instrument].Samples[sample].Length);
             return false;
         }
 
-        void* loopStart = static_cast<uint8_t*>(m_Instruments[instrument].Samples[sample].Data) + m_Instruments[instrument].Samples[sample].LoopStart * m_Instruments[instrument].Samples[sample].WidthInBytes();
-        void* loopEnd = static_cast<uint8_t*>(m_Instruments[instrument].Samples[sample].Data) + m_Instruments[instrument].Samples[sample].LoopEnd * m_Instruments[instrument].Samples[sample].WidthInBytes();
-        void* end = static_cast<uint8_t*>(m_Instruments[instrument].Samples[sample].Data) + m_Instruments[instrument].Samples[sample].Length * m_Instruments[instrument].Samples[sample].WidthInBytes();
+        void* loopStart = static_cast<uint8_t*>(m_Instruments[instrument].Samples[sample].Data) + m_Instruments[instrument].Samples[sample].LoopStart;
+        void* loopEnd = static_cast<uint8_t*>(m_Instruments[instrument].Samples[sample].Data) + m_Instruments[instrument].Samples[sample].LoopEnd;
+        void* end = static_cast<uint8_t*>(m_Instruments[instrument].Samples[sample].Data) + m_Instruments[instrument].Samples[sample].Length;
+        void* endMinusOne = static_cast<uint8_t*>(m_Instruments[instrument].Samples[sample].Data) + (m_Instruments[instrument].Samples[sample].Length - m_Instruments[instrument].Samples[sample].WidthInBytes());
 
         // Copy one sample to the end to prevent clicking.
         if (m_Instruments[instrument].Samples[sample].LoopEnd != 0)
@@ -382,10 +383,11 @@ bool Song::LoadSampleData(uint16_t instrument, uint16_t sample, Has::IStream& st
         }
         else
         {
-            memset(end, 0, m_Instruments[instrument].Samples[sample].WidthInBytes());
+            //memset(end, 0, m_Instruments[instrument].Samples[sample].WidthInBytes());
+            memcpy(end, endMinusOne, m_Instruments[instrument].Samples[sample].WidthInBytes());
         }
 
-        LOG("Song", "Loaded %i bytes of sample data", m_Instruments[instrument].Samples[sample].Length * m_Instruments[instrument].Samples[sample].WidthInBytes());
+        LOG("Song", "Loaded %i bytes of sample data", m_Instruments[instrument].Samples[sample].Length);
         return true;
     }
     return false;
