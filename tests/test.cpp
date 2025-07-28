@@ -1119,8 +1119,7 @@ namespace FileType
     };
 }
 
-
-void split(const std::string &s, char delim, std::vector<std::string>& result)
+static void split(const std::string &s, char delim, std::vector<std::string>& result)
 {
     std::istringstream iss(s);
     std::string item;
@@ -1129,7 +1128,7 @@ void split(const std::string &s, char delim, std::vector<std::string>& result)
         if (!item.empty()) result.push_back(item);
 }
 
-std::string tolower(std::string s)
+static std::string tolower(std::string s)
 {
     std::transform(s.begin(), s.end(), s.begin(), [](uint8_t c){ return std::tolower(c); });
     return s;
