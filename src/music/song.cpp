@@ -2,10 +2,10 @@
 
 #include <new>
 #include <string.h>
-#include <ham/file/song.h>
+#include <ham/music/song.h>
 #include <has/testing/log.h>
 
-namespace Ham::File
+namespace Ham::Music
 {
 
 Song::Song(Has::IAllocator& allocator)

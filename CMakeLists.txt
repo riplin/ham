@@ -46,10 +46,10 @@ add_library(ham
             src/drivers/creative/shared/system.cpp
             src/drivers/gravis/shared/system.cpp
             src/drivers/gravis/gus/driver.cpp
+            src/player/player.cpp
+            src/music/song.cpp
             src/file/mod.cpp
             src/file/s3m.cpp
-            src/file/song.cpp
-            src/player/player.cpp
             src/driver.cpp
            )
 

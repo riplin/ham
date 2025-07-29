@@ -1,7 +1,7 @@
 //Copyright 2025-Present riplin
 
 #include <string.h>
-#include <ham/file/song.h>
+#include <ham/music/song.h>
 #include <has/testing/log.h>
 #include <support/filestrm.h>
 
@@ -137,7 +137,7 @@ namespace Special
     };
 };
 
-Song* Load(Has::IAllocator& allocator, const char* filePath)
+Music::Song* Load(Has::IAllocator& allocator, const char* filePath)
 {
     using namespace Has;
     using namespace Support;
@@ -177,7 +177,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         return nullptr;
     }
 
-    Song* song = Song::Create(allocator);
+    Music::Song* song = Music::Song::Create(allocator);
     if (song == nullptr)
     {
         LOG("S3m", "Failure to create song");
@@ -188,7 +188,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(name), name))
     {
         LOG("S3m", "Error reading name from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     song->SetName(name, sizeof(name));
@@ -197,7 +197,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.SeekFromStart(0x20))
     {
         LOG("S3m", "Error seeking to offset 0x20");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -205,7 +205,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(orderCount), &orderCount))
     {
         LOG("S3m", "Error reading order count from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -213,7 +213,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(instrumentCount), &instrumentCount))
     {
         LOG("S3m", "Error reading instrument count from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     song->SetInstrumentCount(instrumentCount);
@@ -222,7 +222,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(patternCount), &patternCount))
     {
         LOG("S3m", "Error reading pattern count from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -230,7 +230,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(flags), &flags))
     {
         LOG("S3m", "Error reading flags from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -238,7 +238,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(trackerVersion), &trackerVersion))
     {
         LOG("S3m", "Error reading tracker version from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -246,7 +246,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.SeekFromStart(0x30))
     {
         LOG("S3m", "Error seeking to offset 0x30");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     
@@ -254,7 +254,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(globalVolume), &globalVolume))
     {
         LOG("S3m", "Error reading global volume from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     song->SetVolume(globalVolume);
@@ -263,7 +263,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(initialSpeed), &initialSpeed))
     {
         LOG("S3m", "Error reading initial speed from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     song->SetSpeed(initialSpeed);
@@ -272,7 +272,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(initialBpm), &initialBpm))
     {
         LOG("S3m", "Error reading initial tempo from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     song->SetBpm(initialBpm);
@@ -281,7 +281,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(masterVolume), &masterVolume))
     {
         LOG("S3m", "Error reading master volume from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     LOG("S3m", "Master volume is 0x%02X", masterVolume);
@@ -290,7 +290,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.SeekFromCurrent(1))
     {
         LOG("S3m", "Error seeking past 1 byte");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -298,7 +298,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(defaultPan), &defaultPan))
     {
         LOG("S3m", "Error reading ultra default pan from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     LOG("S3m", "Default pan is 0x%02X", defaultPan);
@@ -307,7 +307,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.SeekFromStart(0x40))
     {
         LOG("S3m", "Error seeking to offset 0x40");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -315,7 +315,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(channels), &channels))
     {
         LOG("S3m", "Error reading channels from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -337,14 +337,14 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (orders == nullptr)
     {
         LOG("S3m", "Could not allocate memory for %i orders", orders);
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
     if (!stream.Read(orderCount, orders))
     {
         LOG("S3m", "Error reading %i orders from file", orderCount);
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -374,7 +374,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(instrumentPtr), &instrumentPtr))
         {
             LOG("S3m", "Error reading instrument pointer from file");
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
         uint32_t position = stream.Position();
@@ -383,7 +383,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.SeekFromStart((uint32_t(instrumentPtr) << 4) + 13))
         {
             LOG("S3m", "Error seeking to instrument %i at offset 0x%05lX", instrument, (uint32_t(instrumentPtr) << 4) + 13);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -391,7 +391,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(sampleOffsetHi), &sampleOffsetHi))
         {
             LOG("S3m", "Error reading sample offset high byte for instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -399,7 +399,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(sampleOffsetLo), &sampleOffsetLo))
         {
             LOG("S3m", "Error reading sample offset low word for instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -409,7 +409,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(sampleLength), &sampleLength))
         {
             LOG("S3m", "Error reading sample length for instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -417,7 +417,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(sampleLoopStart), &sampleLoopStart))
         {
             LOG("S3m", "Error reading sample loop start for instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -425,7 +425,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(sampleLoopEnd), &sampleLoopEnd))
         {
             LOG("S3m", "Error reading sample loop end for instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -433,14 +433,14 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(sampleVolume), &sampleVolume))
         {
             LOG("S3m", "Error reading sample volume for instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
         if (!stream.SeekFromCurrent(2))
         {
             LOG("S3m", "Error seeking past 2 bytes in instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -448,7 +448,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(instrumentFlags), &instrumentFlags))
         {
             LOG("S3m", "Error reading instrument flags for instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
         LOG("S3m", "Instrument flags: 0x%02X", instrumentFlags);
@@ -457,16 +457,16 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(middleC), &middleC))
         {
             LOG("S3m", "Error reading middle C for instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
         if (middleC == 0)
-            middleC = File::Note::MiddleC;
+            middleC = Music::Note::MiddleC;
 
         if (!stream.SeekFromCurrent(14))
         {
             LOG("S3m", "Error seeking past 14 bytes in instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -474,7 +474,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(sampleName), &sampleName))
         {
             LOG("S3m", "Error reading name for instrument %i", instrument);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -495,7 +495,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         song->SetInstrumentMiddleC(instrument, middleC);
         song->SetSampleName(instrument, 0, sampleName, sizeof(sampleName));
         song->SetInstrumentName(instrument, sampleName, sizeof(sampleName));
-        song->SetSampleLength(instrument, 0, sampleLength, ((instrumentFlags & InstrumentFlags::Bits16) != 0) ? Song::SampleWidth::BitWidth16 : Song::SampleWidth::BitWidth8);
+        song->SetSampleLength(instrument, 0, sampleLength, ((instrumentFlags & InstrumentFlags::Bits16) != 0) ? Music::Song::SampleWidth::BitWidth16 : Music::Song::SampleWidth::BitWidth8);
         song->SetSampleLoopStart(instrument, 0, sampleLoopStart);
         song->SetSampleLoopEnd(instrument, 0, sampleLoopEnd);
         song->SetSampleVolume(instrument, 0, sampleVolume);
@@ -503,7 +503,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.SeekFromStart(sampleOffset))
         {
             LOG("S3m", "Error seeking back to instrument sample data at offset 0x%08lX", sampleOffset);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -512,7 +512,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.SeekFromStart(position))
         {
             LOG("S3m", "Error seeking back to instrument pointer list at offset 0x%04lX", position);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
     }
@@ -523,7 +523,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(patternPtr), &patternPtr))
         {
             LOG("S3m", "Error reading pattern pointer from file");
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
         uint32_t position = stream.Position();
@@ -531,13 +531,13 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.SeekFromStart((uint32_t(patternPtr) << 4) + 2))
         {
             LOG("S3m", "Error seeking to pattern %i at offset 0x%05lX", pattern, (uint32_t(patternPtr) << 4) + 2);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
-        Song::NoteData note;
-        note.Note = File::Note::NotSet;
-        note.Volume = File::Volume::NotSet;
+        Music::Song::NoteData note;
+        note.Note = Music::Note::NotSet;
+        note.Volume = Music::Volume::NotSet;
         song->SetPatternRowCount(pattern, 64);
         uint8_t row = 0;
         while (row < 64)
@@ -546,7 +546,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
             if (!stream.Read(sizeof(noteFlags), &noteFlags))
             {
                 LOG("S3m", "Error reading note flags for pattern %i row %i", pattern, row);
-                Song::Destroy(song);
+                Music::Song::Destroy(song);
                 return nullptr;
             }
 
@@ -559,24 +559,24 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
             uint8_t channel = channelRemap[noteFlags & NoteFlags::Channel];
 
             note.Instrument = 0;
-            note.Note = File::Note::NotSet;
+            note.Note = Music::Note::NotSet;
             if ((noteFlags & NoteFlags::NoteAndInstrumentPresent))
             {
                 uint8_t noteData = 0;
                 if (!stream.Read(sizeof(noteData), &noteData))
                 {
                     LOG("S3m", "Error reading note data for pattern %i row %i channel %i", pattern, row, channel);
-                    Song::Destroy(song);
+                    Music::Song::Destroy(song);
                     return nullptr;
                 }
                 
                 switch(noteData)
                 {
                 case Note::KeyOff:
-                    note.Note = File::Note::KeyOff;
+                    note.Note = Music::Note::KeyOff;
                     break;
                 case Note::NotSet:
-                    note.Note = File::Note::NotSet;
+                    note.Note = Music::Note::NotSet;
                     break;
                 default:
                     note.Note = ((noteData & Note::Octave) >> Note::Shift::Octave) * 12 + (noteData & Note::Semitone);
@@ -586,27 +586,27 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
                 if (!stream.Read(sizeof(instrument), &instrument))
                 {
                     LOG("S3m", "Error reading instrument for pattern %i row %i channel %i", pattern, row, channel);
-                    Song::Destroy(song);
+                    Music::Song::Destroy(song);
                     return nullptr;
                 }
                 note.Instrument = instrument + 1;
             }
 
 
-            note.Volume = Volume::NotSet;
+            note.Volume = Music::Volume::NotSet;
             if ((noteFlags & NoteFlags::VolumePresent) != 0)
             {
                 uint8_t noteVolume = 0;
                 if (!stream.Read(sizeof(noteVolume), &noteVolume))
                 {
                     LOG("S3m", "Error reading volume for pattern %i row %i channel %i", pattern, row, channel);
-                    Song::Destroy(song);
+                    Music::Song::Destroy(song);
                     return nullptr;
                 }
                 if (noteVolume == 0xFF)
-                    note.Volume = Volume::NotSet;
-                else if (noteVolume > Volume::Max)
-                    note.Volume = Volume::Max;
+                    note.Volume = Music::Volume::NotSet;
+                else if (noteVolume > Music::Volume::Max)
+                    note.Volume = Music::Volume::Max;
                 else
                     note.Volume = noteVolume;
             }
@@ -619,7 +619,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
                 if (!stream.Read(sizeof(effect), &effect))
                 {
                     LOG("S3m", "Error reading effect for pattern %i row %i channel %i", pattern, row, channel);
-                    Song::Destroy(song);
+                    Music::Song::Destroy(song);
                     return nullptr;
                 }
 
@@ -627,7 +627,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
                 if (!stream.Read(sizeof(parameter), &parameter))
                 {
                     LOG("S3m", "Error reading parameter for pattern %i row %i channel %i", pattern, row, channel);
-                    Song::Destroy(song);
+                    Music::Song::Destroy(song);
                     return nullptr;
                 }
 
@@ -635,104 +635,104 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
                 switch (effect)
                 {
                 case Effect::SetSpeed:
-                    note.Effect = File::Effect::SetSpeedEx;
+                    note.Effect = Music::Effect::SetSpeedEx;
                     break;
                 case Effect::JumpToPattern:             // MOD Bxx
-                    note.Effect = File::Effect::JumpToPattern;
+                    note.Effect = Music::Effect::JumpToPattern;
                     break;
                 case Effect::PatternBreak:              // MOD Dxx
-                    note.Effect = File::Effect::PatternBreak;
+                    note.Effect = Music::Effect::PatternBreak;
                     break;
                 case Effect::VolumeSlide:
-                    note.Effect = File::Effect::VolumeSlideEx;
+                    note.Effect = Music::Effect::VolumeSlideEx;
                     break;
                 case Effect::PortamentoDown:
-                    note.Effect = File::Effect::PortamentoDownEx;
+                    note.Effect = Music::Effect::PortamentoDownEx;
                     break;
                 case Effect::PortamentoUp:
-                    note.Effect = File::Effect::PortamentoUpEx;
+                    note.Effect = Music::Effect::PortamentoUpEx;
                     break;
                 case Effect::PortamentoToNote:          // MOD 3xx
-                    note.Effect = File::Effect::PortamentoToNote;
+                    note.Effect = Music::Effect::PortamentoToNote;
                     break;
                 case Effect::Vibrato:                   // MOD 4xy
-                    note.Effect = File::Effect::Vibrato;
+                    note.Effect = Music::Effect::Vibrato;
                     break;
                 case Effect::Tremor:
-                    note.Effect = File::Effect::Tremor;
+                    note.Effect = Music::Effect::Tremor;
                     break;
                 case Effect::Arpeggio:                  // MOD 0xy
-                    note.Effect = File::Effect::Arpeggio;
+                    note.Effect = Music::Effect::Arpeggio;
                     break;
                 case Effect::VibratoAndVolumeSlide:
-                    note.Effect = File::Effect::VibratoAndVolumeSlideEx;
+                    note.Effect = Music::Effect::VibratoAndVolumeSlideEx;
                     break;
                 case Effect::PortamentoAndVolumeSlide:
-                    note.Effect = File::Effect::PortamentoAndVolumeSlideEx;
+                    note.Effect = Music::Effect::PortamentoAndVolumeSlideEx;
                     break;
                 case Effect::SampleOffset:              // MOD 9xx
-                    note.Effect = File::Effect::SampleOffset;
+                    note.Effect = Music::Effect::SampleOffset;
                     break;
                 case Effect::RetriggerAndVolumeSlide:
-                    note.Effect = File::Effect::RetriggerAndVolumeSlide;
+                    note.Effect = Music::Effect::RetriggerAndVolumeSlide;
                     break;
                 case Effect::Tremolo:                   // MOD 7xy
-                    note.Effect = File::Effect::Tremolo;
+                    note.Effect = Music::Effect::Tremolo;
                     break;
                 case Effect::Special:                   // MOD Exy
-                    note.Effect = File::Effect::MoreEffects;
+                    note.Effect = Music::Effect::MoreEffects;
                     switch (parameter & Special::Mask)
                     {
                     case Special::SetFilter:            // MOD E0x
-                        note.Parameter = File::SubEffect::SetFilter | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::SetFilter | (parameter & ~Special::Mask);
                         break;
                     case Special::GlissandoControl:     // MOD E3x
-                        note.Parameter = File::SubEffect::GlissandoControl | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::GlissandoControl | (parameter & ~Special::Mask);
                         break;
                     case Special::SetFineTune:          // MOD E5x
-                        note.Parameter = File::SubEffect::SetFinetune | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::SetFinetune | (parameter & ~Special::Mask);
                         break;
                     case Special::SetVibratoWaveform:   // MOD E4x
-                        note.Parameter = File::SubEffect::SetVibratoWaveform | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::SetVibratoWaveform | (parameter & ~Special::Mask);
                         break;
                     case Special::SetTremoloWaveform:   // MOD E7x
-                        note.Parameter = File::SubEffect::SetTremoloWaveform | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::SetTremoloWaveform | (parameter & ~Special::Mask);
                         break;
                     case Special::FinePanning:          // MOD E8x
-                        note.Parameter = File::SubEffect::FinePanning | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::FinePanning | (parameter & ~Special::Mask);
                         break;
                     case Special::StereoControl:
-                        note.Effect = File::Effect::StereoControl;
+                        note.Effect = Music::Effect::StereoControl;
                         note.Parameter = parameter & ~Special::Mask;
                         break;
                     case Special::PatternLoop:          // MOD E6x
-                        note.Parameter = File::SubEffect::PatternLoop | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::PatternLoop | (parameter & ~Special::Mask);
                         break;
                     case Special::CutNote:              // MOD ECx
-                        note.Parameter = File::SubEffect::CutNote | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::CutNote | (parameter & ~Special::Mask);
                         break;
                     case Special::DelayNote:            // MOD EDx
-                        note.Parameter = File::SubEffect::DelayNote | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::DelayNote | (parameter & ~Special::Mask);
                         break;
                     case Special::PatternDelay:         // MOD EEx
-                        note.Parameter = File::SubEffect::PatternDelay | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::PatternDelay | (parameter & ~Special::Mask);
                         break;
                     case Special::FunkRepeat:           // MOD EFx
-                        note.Parameter = File::SubEffect::InvertLoop | (parameter & ~Special::Mask);
+                        note.Parameter = Music::SubEffect::InvertLoop | (parameter & ~Special::Mask);
                         break;
                     }
                     break;
                 case Effect::SetTempo:
-                    note.Effect = File::Effect::SetTempo;
+                    note.Effect = Music::Effect::SetTempo;
                     break;
                 case Effect::FineVibrato:
-                    note.Effect = File::Effect::FineVibrato;
+                    note.Effect = Music::Effect::FineVibrato;
                     break;
                 case Effect::GlobalVolume:
-                    note.Effect = File::Effect::GlobalVolume;
+                    note.Effect = Music::Effect::GlobalVolume;
                     break;
                 case Effect::Pan:                       // MOD 8xx
-                    note.Effect = File::Effect::Pan;
+                    note.Effect = Music::Effect::Pan;
                     break;
                 default:
                     note.Effect = 0;
@@ -751,7 +751,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.SeekFromStart(position))
         {
             LOG("S3m", "Error seeking back to pattern pointer list at offset 0x%04lX", position);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
     }
@@ -762,7 +762,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(panData), &panData))
         {
             LOG("S3m", "Error reading channel balance data from file");
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
         for (uint8_t channel = 0; channel < sizeof(panData); channel++)

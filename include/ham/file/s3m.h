@@ -4,11 +4,11 @@
 
 #include <has/ialloc.h>
 
-namespace Ham::File { class Song; }
+namespace Ham::Music { class Song; }
 
 namespace Ham::File::S3m
 {
 
-    extern Song* Load(Has::IAllocator& allocator, const char* filePath);
+    extern Music::Song* Load(Has::IAllocator& allocator, const char* filePath);
 
 }

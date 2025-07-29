@@ -6,7 +6,7 @@
 #include <has/types.h>
 #include <has/ialloc.h>
 #include <ham/driver.h>
-#include <ham/file/song.h>
+#include <ham/music/song.h>
 
 namespace Ham::Player
 {
@@ -17,7 +17,7 @@ public:
 
     typedef std::function<void(uint8_t RefreshRateInHz)> SetRefreshRate_t;
 
-    inline Player(Has::IAllocator& allocator, Ham::Driver::Base& driver, Ham::File::Song& song, const SetRefreshRate_t& refreshRateCallback)
+    inline Player(Has::IAllocator& allocator, Ham::Driver::Base& driver, Ham::Music::Song& song, const SetRefreshRate_t& refreshRateCallback)
         : m_Allocator(allocator)
         , m_RefreshRateCallback(refreshRateCallback)
         , m_Driver(driver)
@@ -110,7 +110,7 @@ private:
     Channel m_Channels[32];
     SetRefreshRate_t m_RefreshRateCallback;
     Ham::Driver::Base& m_Driver;
-    Ham::File::Song& m_Song;
+    Ham::Music::Song& m_Song;
     uint16_t* m_InstrumentMiddleC;
 
     enum State : uint8_t
@@ -135,7 +135,7 @@ private:
     uint8_t m_CurrentRow;
     uint8_t m_CurrentOrderIndex;
 
-    const File::Song::NoteData* m_Note;
+    const Music::Song::NoteData* m_Note;
 
     static uint8_t s_SineTable[32];
 };

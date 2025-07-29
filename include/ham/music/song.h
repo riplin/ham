@@ -45,7 +45,7 @@
 
 */
 
-namespace Ham::File
+namespace Ham::Music
 {
 
 typedef uint8_t Effect_t;
@@ -198,8 +198,8 @@ public:
     static uint16_t ConvertFineTuneToPeriod(uint8_t fineTune);
     static inline uint16_t GetPeriod(Note_t note) { return s_NotePeriods[Has::min<Note_t>(note, (sizeof(s_NotePeriods) / sizeof(*s_NotePeriods)) - 1)]; }
 protected:
-    friend Song* Mod::Load(Has::IAllocator& allocator, const char* filePath);;
-    friend Song* S3m::Load(Has::IAllocator& allocator, const char* filePath);;
+    friend Song* File::Mod::Load(Has::IAllocator& allocator, const char* filePath);;
+    friend Song* File::S3m::Load(Has::IAllocator& allocator, const char* filePath);;
 
     static Song* Create(Has::IAllocator& allocator);
 

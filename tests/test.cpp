@@ -8,7 +8,7 @@
 #include <sys/nearptr.h>
 #include <ham/file/mod.h>
 #include <ham/file/s3m.h>
-#include <ham/file/song.h>
+#include <ham/music/song.h>
 #include <has/system/pic.h>
 #include <has/system/pit.h>
 #include <hag/system/bda.h>
@@ -23,7 +23,7 @@
 
 #include <ham/drivers/gravis/gus/driver.h>
 
-Ham::File::Song* s_Song = nullptr;
+Ham::Music::Song* s_Song = nullptr;
 Ham::Driver::Base* s_Driver = nullptr;
 Ham::Player::Player* s_Player = nullptr;
 
@@ -853,10 +853,10 @@ static const char* s_NoteNames[12]
     "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-"
 };
 
-void WriteRow(uint8_t* rowPtr, const Ham::File::Song::NoteData* currentNote, uint8_t currentRowIndex, bool drawVolume)
+void WriteRow(uint8_t* rowPtr, const Ham::Music::Song::NoteData* currentNote, uint8_t currentRowIndex, bool drawVolume)
 {
     using namespace Has;
-    using namespace Ham::File;
+    using namespace Ham::Music;
 
     rowPtr[0] = '0' + (currentRowIndex / 10);
     rowPtr[2] = '0' + (currentRowIndex % 10);
@@ -937,7 +937,7 @@ static int8_t channelVolumes[5] = { 0 };
 void WriteTick0()
 {
     using namespace Has;
-    using namespace Ham::File;
+    using namespace Ham::Music;
     // Update the once per row stuff.
     SYS_ClearInterrupts();
     uint8_t currentOrderIndex = s_Player->GetCurrentOrderIndex();
@@ -1162,6 +1162,7 @@ int main(int argc, const char** argv)
     __djgpp_nearptr_enable();
     using namespace Hag;
     using namespace Ham::File;
+    using namespace Ham::Music;
     using namespace Has::System;
     using namespace Ham::Gravis::Shared;
 

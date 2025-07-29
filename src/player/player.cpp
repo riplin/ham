@@ -8,6 +8,8 @@ namespace Ham::Player
 
 void Player::Tick()
 {
+    using namespace Ham::Music;
+
     if (m_State != State::Playing)
         return;
 
@@ -30,7 +32,7 @@ void Player::Tick()
             bool breakFlag = false;
             bool jumpFlag = false;
             uint16_t currentOrder = m_Song.GetOrder(m_OrderIndex);
-            const File::Song::NoteData* currentPattern = m_Song.GetPatternNotes(currentOrder);
+            const Song::NoteData* currentPattern = m_Song.GetPatternNotes(currentOrder);
             m_Note = currentPattern + m_Row * m_Song.GetChannelCount();
 
             m_CurrentTick = m_Tick;
@@ -169,7 +171,7 @@ void Player::UploadSamples()
 void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
 {
     using namespace Has;
-    using namespace Ham::File;
+    using namespace Ham::Music;
 
     LOG("Player", "HandleTick0 channel %i start", channel);
     // Delay note. We ignore everything until that tick is reached.
@@ -393,6 +395,7 @@ void Player::HandleTick0(uint8_t channel, bool& breakFlag, bool& jumpFlag)
 
 int16_t Player::ProcessArpeggio(uint8_t channel, uint8_t parameter)
 {
+    using namespace Ham::Music;
     int16_t delta = 0;
     switch (m_Tick % 3)
     {
@@ -400,10 +403,10 @@ int16_t Player::ProcessArpeggio(uint8_t channel, uint8_t parameter)
         //base note.
         break;
     case 1:
-        delta = ((File::Note::MiddleC * File::Song::GetPeriod(m_Channels[channel].Note + (parameter >> 4))) / m_InstrumentMiddleC[m_Channels[channel].Sample - 1]) - m_Channels[channel].Period;
+        delta = ((Note::MiddleC * Song::GetPeriod(m_Channels[channel].Note + (parameter >> 4))) / m_InstrumentMiddleC[m_Channels[channel].Sample - 1]) - m_Channels[channel].Period;
         break;
     case 2:
-        delta = ((File::Note::MiddleC * File::Song::GetPeriod(m_Channels[channel].Note + (parameter & 0x0F))) / m_InstrumentMiddleC[m_Channels[channel].Sample - 1]) - m_Channels[channel].Period;
+        delta = ((Note::MiddleC * Song::GetPeriod(m_Channels[channel].Note + (parameter & 0x0F))) / m_InstrumentMiddleC[m_Channels[channel].Sample - 1]) - m_Channels[channel].Period;
         break;
     }
     return delta;
@@ -534,7 +537,7 @@ void Player::ProcessVolume(uint8_t channel, int16_t volumeDelta)
 void Player::HandleTickX(uint8_t channel)
 {
     using namespace Has;
-    using namespace Ham::File;
+    using namespace Ham::Music;
 
     LOG("Player", "HandleTick0 channel %i start", channel);
 

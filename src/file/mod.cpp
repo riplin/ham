@@ -1,7 +1,7 @@
 //Copyright 2025-Present riplin
 
 #include <string.h>
-#include <ham/file/song.h>
+#include <ham/music/song.h>
 #include <has/testing/log.h>
 #include <support/filestrm.h>
 
@@ -73,7 +73,7 @@ static bool ReadWord(Support::FileStream& stream, uint16_t& value)
     return true;
 }
 
-Song* Load(Has::IAllocator& allocator, const char* filePath)
+Music::Song* Load(Has::IAllocator& allocator, const char* filePath)
 {
     using namespace Has;
     using namespace Support;
@@ -86,7 +86,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         return nullptr;
     }
 
-    Song* song = Song::Create(allocator);
+    Music::Song* song = Music::Song::Create(allocator);
     if (song == nullptr)
     {
         LOG("Mod", "Failure to create song");
@@ -98,7 +98,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!DetermineSongProperties(stream, channelCount, sampleCount))
     {
         LOG("Mod", "Failure to determine file properties");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     
@@ -119,7 +119,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(name), name))
     {
         LOG("Mod", "Error reading name from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
     song->SetName(name, sizeof(name));
@@ -132,7 +132,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(sampleName), sampleName))
         {
             LOG("Mod", "Error reading sample %i name from file", sample);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
         song->SetInstrumentName(sample, sampleName, sizeof(sampleName));
@@ -142,7 +142,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!ReadWord(stream, sampleLength))
         {
             LOG("Mod", "Error reading sample %i length from file", sample);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -150,7 +150,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(fineTune), &fineTune))
         {
             LOG("Mod", "Error reading sample %i fine tune from file", sample);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
         
@@ -158,7 +158,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!stream.Read(sizeof(volume), &volume))
         {
             LOG("Mod", "Error reading sample %i volume from file", sample);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -166,7 +166,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!ReadWord(stream, loopStart))
         {
             LOG("Mod", "Error reading sample %i loop start from file", sample);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -174,7 +174,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (!ReadWord(stream, loopEnd))
         {
             LOG("Mod", "Error reading sample %i loop end from file", sample);
-            Song::Destroy(song);
+            Music::Song::Destroy(song);
             return nullptr;
         }
 
@@ -186,8 +186,8 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
         if (loopEnd > sampleLength)
             loopEnd = sampleLength;
 
-        song->SetSampleLength(sample, 0, sampleLength, Song::SampleWidth::BitWidth8);
-        song->SetInstrumentMiddleC(sample, Song::ConvertFineTuneToPeriod(fineTune));
+        song->SetSampleLength(sample, 0, sampleLength, Music::Song::SampleWidth::BitWidth8);
+        song->SetInstrumentMiddleC(sample, Music::Song::ConvertFineTuneToPeriod(fineTune));
         song->SetSampleVolume(sample, 0, volume);
         song->SetSampleLoopStart(sample, 0, loopStart);
         song->SetSampleLoopEnd(sample, 0, loopEnd);
@@ -197,7 +197,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!stream.Read(sizeof(orderCount), &orderCount))
     {
         LOG("Mod", "Error reading order count from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -207,7 +207,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     if (!song->LoadOrders<uint8_t>(128, stream))
     {
         LOG("Mod", "Error reading order list from file");
-        Song::Destroy(song);
+        Music::Song::Destroy(song);
         return nullptr;
     }
 
@@ -233,7 +233,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
     {
         song->SetPatternRowCount(pattern, 64);
 
-        Song::NoteData note;
+        Music::Song::NoteData note;
         uint8_t data[4];
         for (uint16_t row = 0; row < song->GetPatternRowCount(pattern); ++row)
         {
@@ -242,7 +242,7 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
                 if (!stream.Read(sizeof(data), data))
                 {
                     LOG("Mod", "Error pattern note %i from row %i from pattern %i", channel, row, pattern);
-                    Song::Destroy(song);
+                    Music::Song::Destroy(song);
                     return nullptr;
                 }
 
@@ -251,10 +251,10 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
                 note.Effect = data[2] & 0x0f;
                 note.Parameter = data[3];
                 if (period != 0)
-                    note.Note = Song::PeriodToNote(period) - 24;
+                    note.Note = Music::Song::PeriodToNote(period) - 24;
                 else
-                    note.Note = File::Note::NotSet;
-                note.Volume = Volume::NotSet;
+                    note.Note = Music::Note::NotSet;
+                note.Volume = Music::Volume::NotSet;
 
                 song->SetNote(pattern, row, channel, note);
             }
@@ -263,17 +263,17 @@ Song* Load(Has::IAllocator& allocator, const char* filePath)
 
     for (uint8_t instrument = 0; instrument < song->GetInstrumentCount(); ++instrument)
     {
-        const Song::Sample* sample = song->GetSample(instrument, 0);
+        const Music::Song::Sample* sample = song->GetSample(instrument, 0);
         if (sample->Length != 0)
         {
             uint32_t position = stream.Position() + sample->Length;
 
             if (sample->LoopEnd != 0)
-                song->SetSampleLength(instrument, 0, min<uint16_t>(sample->Length, sample->LoopEnd), Song::SampleWidth::BitWidth8);
+                song->SetSampleLength(instrument, 0, min<uint16_t>(sample->Length, sample->LoopEnd), Music::Song::SampleWidth::BitWidth8);
 
             if (!song->LoadSampleData(instrument, 0, stream))
             {
-                Song::Destroy(song);
+                Music::Song::Destroy(song);
                 return nullptr;
             }
             stream.SeekFromStart(position);

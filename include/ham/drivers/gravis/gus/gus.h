@@ -4,6 +4,8 @@
 
 #include <has/imports.h>
 
+#include <ham/drivers/gravis/shared/system.h>
+
 #include <ham/drivers/gravis/shared/gf1/data.h>
 #include <ham/drivers/gravis/shared/gf1/dmactrl.h>
 #include <ham/drivers/gravis/shared/gf1/dramio.h>
@@ -11,8 +13,6 @@
 #include <ham/drivers/gravis/shared/gf1/intrctrl.h>
 #include <ham/drivers/gravis/shared/gf1/intrstat.h>
 #include <ham/drivers/gravis/shared/gf1/mixcrtl.h>
-#include <ham/drivers/gravis/shared/gf1/mixrctrl.h>
-#include <ham/drivers/gravis/shared/gf1/mixrdata.h>
 #include <ham/drivers/gravis/shared/gf1/page.h>
 #include <ham/drivers/gravis/shared/gf1/regctrl.h>
 #include <ham/drivers/gravis/shared/gf1/revlvl.h>
@@ -46,7 +46,12 @@
 #include <ham/drivers/gravis/shared/midi/data.h>
 #include <ham/drivers/gravis/shared/midi/status.h>
 
-#include <ham/drivers/gravis/shared/system.h>
+#include <ham/drivers/gravis/shared/gf1/mixer/data.h>
+#include <ham/drivers/gravis/shared/gf1/mixer/address.h>
+#include <ham/drivers/gravis/shared/gf1/mixer/attn.h>
+#include <ham/drivers/gravis/shared/gf1/mixer/balpan.h>
+#include <ham/drivers/gravis/shared/gf1/mixer/ctrll.h>
+#include <ham/drivers/gravis/shared/gf1/mixer/ctrlr.h>
 
 namespace Ham::Gravis::Gus
 {
@@ -60,8 +65,6 @@ namespace Ham::Gravis::Gus
     IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, InterruptControl);
     IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, InterruptStatus);
     IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, MixControl);
-    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, MixerControl);
-    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::GF1, MixerData);
     IMPORTNAMESPACEANDTYPE(Shared::GF1, Page);
     IMPORTNAMESPACEANDTYPE(Shared::GF1, RegisterControl);
     IMPORTNAMESPACEANDTYPE(Shared::GF1, RevisionLevel);
@@ -104,6 +107,15 @@ namespace Ham::Gravis::Gus
         IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::Midi, Status);
     }
 
+    namespace Mixer
+    {
+        IMPORTNAMESPACEANDTYPE(Shared::GF1::Mixer, Address);
+        IMPORTNAMESPACEANDTYPE(Shared::GF1::Mixer, Data);
+        IMPORTNAMESPACEANDTYPE(Shared::GF1::Mixer, Attenuation);
+        IMPORTNAMESPACEANDTYPE(Shared::GF1::Mixer, BalancePan);
+        IMPORTNAMESPACEANDTYPE(Shared::GF1::Mixer, ControlLeft);
+        IMPORTNAMESPACEANDTYPE(Shared::GF1::Mixer, ControlRight);
+    }
 }
 
 // INTERFACE                           I/O,MEM,    R,W     ADDRESS
