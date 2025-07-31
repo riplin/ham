@@ -46,14 +46,34 @@
 #include <ham/drivers/gravis/shared/midi/data.h>
 #include <ham/drivers/gravis/shared/midi/status.h>
 
-#include <ham/drivers/gravis/shared/mixer/data.h>
-#include <ham/drivers/gravis/shared/mixer/address.h>
-#include <ham/drivers/gravis/shared/mixer/attn.h>
-#include <ham/drivers/gravis/shared/mixer/balpan.h>
-#include <ham/drivers/gravis/shared/mixer/ctrll.h>
-#include <ham/drivers/gravis/shared/mixer/ctrlr.h>
+#include <ham/drivers/gravis/shared/codec/capt.h>
+#include <ham/drivers/gravis/shared/codec/data.h>
+#include <ham/drivers/gravis/shared/codec/index.h>
+#include <ham/drivers/gravis/shared/codec/play.h>
+#include <ham/drivers/gravis/shared/codec/status.h>
 
-namespace Ham::Gravis::Gus
+#include <ham/drivers/gravis/shared/codec/auxic.h>
+#include <ham/drivers/gravis/shared/codec/df.h>
+#include <ham/drivers/gravis/shared/codec/ic.h>
+#include <ham/drivers/gravis/shared/codec/itfconf.h>
+#include <ham/drivers/gravis/shared/codec/lc.h>
+#include <ham/drivers/gravis/shared/codec/modeid.h>
+#include <ham/drivers/gravis/shared/codec/oc.h>
+#include <ham/drivers/gravis/shared/codec/pbc.h>
+#include <ham/drivers/gravis/shared/codec/pc.h>
+#include <ham/drivers/gravis/shared/codec/tstinit.h>
+
+#include <ham/drivers/gravis/shared/codec/afei.h>
+#include <ham/drivers/gravis/shared/codec/afeii.h>
+#include <ham/drivers/gravis/shared/codec/afs.h>
+#include <ham/drivers/gravis/shared/codec/cbc.h>
+#include <ham/drivers/gravis/shared/codec/cdf.h>
+#include <ham/drivers/gravis/shared/codec/lic.h>
+#include <ham/drivers/gravis/shared/codec/mioc.h>
+#include <ham/drivers/gravis/shared/codec/timer.h>
+#include <ham/drivers/gravis/shared/codec/vcid.h>
+
+namespace Ham::Gravis::Max
 {
 
     HAM_GRAVIS_SYSTEM;
@@ -107,14 +127,25 @@ namespace Ham::Gravis::Gus
         IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::Midi, Status);
     }
 
-    namespace Mixer
+    namespace Codec
     {
-        IMPORTNAMESPACEANDTYPE(Shared::Mixer, Address);
-        IMPORTNAMESPACEANDTYPE(Shared::Mixer, Data);
-        IMPORTNAMESPACEANDTYPE(Shared::Mixer, Attenuation);
-        IMPORTNAMESPACEANDTYPE(Shared::Mixer, BalancePan);
-        IMPORTNAMESPACEANDTYPE(Shared::Mixer, ControlLeft);
-        IMPORTNAMESPACEANDTYPE(Shared::Mixer, ControlRight);
+        IMPORTNAMESPACEANDTYPE(Shared::Codec, Capture);
+        IMPORTNAMESPACEANDTYPE(Shared::Codec, Data);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::Codec, Index);
+        IMPORTNAMESPACEANDTYPE(Shared::Codec, Play);
+        IMPORTNAMESPACEANDTYPEANDSHIFT(Shared::Codec, Status);
+
+        IMPORTNAMESPACE(Shared::Codec, AuxiliaryInputControl);
+        IMPORTNAMESPACE(Shared::Codec, DataFormat);
+        IMPORTNAMESPACE(Shared::Codec, InputControl);
+        IMPORTNAMESPACE(Shared::Codec, InterfaceControl);
+        IMPORTNAMESPACE(Shared::Codec, LoopbackControl);
+        IMPORTNAMESPACE(Shared::Codec, ModeAndId);
+        IMPORTNAMESPACE(Shared::Codec, OutputControl);
+        IMPORTNAMESPACE(Shared::Codec, PinControl);
+        IMPORTNAMESPACE(Shared::Codec, PlaybackBaseCount);
+        IMPORTNAMESPACE(Shared::Codec, ErrorStatusAndInitialization);
+
     }
 }
 

@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <ham/drivers/gravis/shared/gf1/mixer/address.h>
+#include <ham/drivers/gravis/shared/mixer/address.h>
 
-namespace Ham::Gravis::Shared::GF1::Mixer
+namespace Ham::Gravis::Shared::Mixer
 {
 
 namespace Register

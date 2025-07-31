@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <ham/drivers/gravis/shared/gf1/mixer/data.h>
+#include <ham/drivers/gravis/shared/mixer/data.h>
 
-namespace Ham::Gravis::Shared::GF1::Mixer
+namespace Ham::Gravis::Shared::Mixer
 {
 
 typedef IntegratedCircuitSystems::ICS2101::Attenuation_t Attenuation_t;

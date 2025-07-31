@@ -4,10 +4,10 @@
 
 #include <ham/driver.h>
 
-namespace Ham::Gravis::Gus
+namespace Ham::Gravis
 {
 
-class Driver final : public Ham::Driver::Base
+class Driver : public Ham::Driver::Base
 {
 public:
     static bool Detect();
@@ -16,6 +16,8 @@ public:
     virtual const char* ResultToString(Ham::Driver::Result_t result) override;
 
     virtual Ham::Driver::Result_t Initialize() override;
+
+    virtual const char* GetName() const override;
 
     virtual Ham::Driver::Voice_t GetMaximumNumberOfVoices() const override;
     virtual void SetActiveVoices(Ham::Driver::Voice_t activeVoices) override;
@@ -34,7 +36,7 @@ public:
     virtual void SetVoicePan(Ham::Driver::Voice_t voice, Ham::Driver::PanPosition_t pan) override;
 
     HAS_NOCOPY(Driver);
-private:
+protected:
     inline Driver(Has::IAllocator& allocator)
         : Base(allocator)
         , m_ActiveVoices(14)
@@ -44,6 +46,42 @@ private:
     virtual ~Driver();
 
     Ham::Driver::Voice_t m_ActiveVoices;
+};
+
+class DriverMixer : public Driver
+{
+public:
+    inline DriverMixer(Has::IAllocator& allocator)
+        : Driver(allocator)
+    {
+    }
+
+    virtual const char* GetName() const override;
+
+};
+
+class DriverMixerReversed : public Driver
+{
+public:
+    inline DriverMixerReversed(Has::IAllocator& allocator)
+        : Driver(allocator)
+    {
+    }
+
+    virtual const char* GetName() const override;
+
+};
+
+class DriverCodec : public Driver
+{
+public:
+    inline DriverCodec(Has::IAllocator& allocator)
+        : Driver(allocator)
+    {
+    }
+
+    virtual const char* GetName() const override;
+
 };
 
 }

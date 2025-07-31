@@ -21,7 +21,7 @@
 #include <hag/drivers/vga/modeset.h>
 #include <ham/drivers/gravis/shared/system.h>
 
-#include <ham/drivers/gravis/gus/driver.h>
+#include <ham/drivers/gravis/driver.h>
 
 Ham::Music::Song* s_Song = nullptr;
 Ham::Driver::Base* s_Driver = nullptr;
@@ -1198,9 +1198,11 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-    if (Ham::Gravis::Gus::Driver::Detect())
+    if (Ham::Gravis::Driver::Detect())
     {
-        s_Driver = Ham::Gravis::Gus::Driver::Create(allocator);
+        s_Driver = Ham::Gravis::Driver::Create(allocator);
+        LOG("Test", "Sound driver: %s", s_Driver->GetName());
+
         auto result = s_Driver->Initialize();
         if (result != Ham::Driver::Result::Success)
         {

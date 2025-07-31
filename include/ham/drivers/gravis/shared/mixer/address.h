@@ -5,7 +5,7 @@
 #include <ham/drivers/ics/ics2101/ics2101.h>
 #include <ham/drivers/gravis/shared/regtype.h>
 
-namespace Ham::Gravis::Shared::GF1::Mixer
+namespace Ham::Gravis::Shared::Mixer
 {
 
 namespace Register

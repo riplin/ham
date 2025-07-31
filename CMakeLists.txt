@@ -45,7 +45,7 @@ include_directories(
 add_library(ham
             src/drivers/creative/shared/system.cpp
             src/drivers/gravis/shared/system.cpp
-            src/drivers/gravis/gus/driver.cpp
+            src/drivers/gravis/driver.cpp
             src/player/player.cpp
             src/music/song.cpp
             src/file/mod.cpp

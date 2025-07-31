@@ -10,6 +10,10 @@
 #include <ham/drivers/ics/shared/regs/balpan.h>
 #include <ham/drivers/ics/shared/regs/ctrll.h>
 #include <ham/drivers/ics/shared/regs/ctrlr.h>
+#include <ham/drivers/ics/shared/regs/attn.h>
+#include <ham/drivers/ics/shared/regs/balpan.h>
+#include <ham/drivers/ics/shared/regs/ctrll.h>
+#include <ham/drivers/ics/shared/regs/ctrlr.h>
 #include <ham/drivers/ics/shared/io/attn.h>
 #include <ham/drivers/ics/shared/io/balpan.h>
 #include <ham/drivers/ics/shared/io/ctrll.h>
@@ -23,6 +27,11 @@ namespace Ham::IntegratedCircuitSystems::ICS2101
     IMPORTNAMESPACEANDTYPE(Shared, BalancePan);
     IMPORTNAMESPACEANDTYPE(Shared, ControlLeft);
     IMPORTNAMESPACEANDTYPE(Shared, ControlRight);
+
+    IMPORTNAMESPACE(Shared, Attenuation);
+    IMPORTNAMESPACE(Shared, BalancePan);
+    IMPORTNAMESPACE(Shared, ControlLeft);
+    IMPORTNAMESPACE(Shared, ControlRight);
 
     namespace IO
     {

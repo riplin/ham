@@ -82,6 +82,8 @@ public:
 
     virtual Result_t Initialize() = 0;
 
+    virtual const char* GetName() const = 0;
+
     virtual Voice_t GetMaximumNumberOfVoices() const = 0;
     virtual void SetActiveVoices(Voice_t activeVoices) = 0;
 

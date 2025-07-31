@@ -1,15 +1,16 @@
 //Copyright 2025-Present riplin
 
 #include <new>
+#include <has/testing/log.h>
+#include <ham/drivers/gravis/driver.h>
 #include <ham/drivers/gravis/gus/gus.h>
-#include <ham/drivers/gravis/gus/driver.h>
 
-namespace Ham::Gravis::Gus
+namespace Ham::Gravis
 {
 
 Driver::~Driver()
 {
-    Shutdown();
+    Gus::Shutdown();
 }
 
 bool Driver::Detect()
@@ -20,7 +21,7 @@ bool Driver::Detect()
     uint8_t gf1Interrupt = 0;
     uint8_t midiInterrupt = 0;
     auto result = Gus::ParseEnvironmentVariable(baseAddress, playDma, recordDma, gf1Interrupt, midiInterrupt);
-    if (result != InitializeError::Success)
+    if (result != Gus::InitializeError::Success)
         return false;
 
     if (!Gus::DetectCard(baseAddress))
@@ -31,17 +32,47 @@ bool Driver::Detect()
 
 Ham::Driver::Base* Driver::Create(Has::IAllocator& allocator)
 {
-    return ::new(allocator.Allocate(sizeof(Driver))) Driver(allocator);
+    uint16_t baseAddress = 0;
+    uint8_t playDma = 0;
+    uint8_t recordDma = 0;
+    uint8_t gf1Interrupt = 0;
+    uint8_t midiInterrupt = 0;
+    auto result = Gus::ParseEnvironmentVariable(baseAddress, playDma, recordDma, gf1Interrupt, midiInterrupt);
+    if (result != Gus::InitializeError::Success)
+        return nullptr;
+
+    Gus::RevisionLevel_t revision = Gus::RevisionLevel::Read(baseAddress);
+    LOG("Gravis", "Revision level: 0x%02X", revision);
+
+    if (revision == Gus::RevisionLevel::Pre3p7)
+        return ::new(allocator.Allocate(sizeof(Driver))) Driver(allocator);
+
+    if (revision == Gus::RevisionLevel::Rev3p7)
+        return ::new(allocator.Allocate(sizeof(DriverMixerReversed))) DriverMixerReversed(allocator);
+
+    if ((revision == Gus::RevisionLevel::Rev3p7p) || (revision == (Gus::RevisionLevel::Rev3p7p + 1)) ||
+        ((revision >= 0x81) && (revision <= 0x90)))
+        return ::new(allocator.Allocate(sizeof(DriverMixer))) DriverMixer(allocator);
+
+    if ((revision >= 0x08) && (revision <= 0x0B))
+        return ::new(allocator.Allocate(sizeof(DriverCodec))) DriverCodec(allocator);
+
+    return nullptr;
 }
 
 const char* Driver::ResultToString(Ham::Driver::Result_t result)
 {
-    return InitializeError::ToString(result);
+    return Gus::InitializeError::ToString(result);
 }
 
 Ham::Driver::Result_t Driver::Initialize()
 {
     return Gus::Initialize(m_Allocator);
+}
+
+const char* Driver::GetName() const
+{
+    return "Gravis Ultrasound (pre 3.7)";
 }
 
 Ham::Driver::Voice_t Driver::GetMaximumNumberOfVoices() const
@@ -82,8 +113,8 @@ void Driver::ResetVoice(Ham::Driver::Voice_t voice)
 
 void Driver::PlayVoice(Ham::Driver::Voice_t voice, Ham::Driver::Address_t startLocation, Ham::Driver::Address_t loopStart, Ham::Driver::Address_t loopEnd, Ham::Driver::VoiceControl_t voiceControl)
 {
+    using namespace Gus;
     using namespace Ham::Driver;
-    using namespace Shared::GF1;
 
     Voice::VoiceControl_t vc = Voice::VoiceControl::Play;
     vc |= ((voiceControl & VoiceControl::BitWidth) >> VoiceControl::Shift::BitWidth) << Voice::VoiceControl::Shift::BitWidth;
@@ -118,6 +149,21 @@ void Driver::SetVoicePlaybackFrequency(Ham::Driver::Voice_t voice, uint16_t freq
 void Driver::SetVoicePan(Ham::Driver::Voice_t voice, Ham::Driver::PanPosition_t pan)
 {
     Gus::SetPan(voice, pan >> 4);
+}
+
+const char* DriverMixer::GetName() const
+{
+    return "Gravis Ultrasound (3.7+)";
+}
+
+const char* DriverMixerReversed::GetName() const
+{
+    return "Gravis Ultrasound (reversed channels)";
+}
+
+const char* DriverCodec::GetName() const
+{
+    return "Gravis Ultrasound Max";
 }
 
 }
