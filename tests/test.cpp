@@ -23,6 +23,8 @@
 
 #include <ham/drivers/gravis/driver.h>
 
+#include <ham/drivers/amd/interwav/interwav.h>
+
 Ham::Music::Song* s_Song = nullptr;
 Ham::Driver::Base* s_Driver = nullptr;
 Ham::Player::Player* s_Player = nullptr;
@@ -1161,12 +1163,15 @@ int main(int argc, const char** argv)
 {
     __djgpp_nearptr_enable();
     using namespace Hag;
+    using namespace Ham;
     using namespace Ham::File;
     using namespace Ham::Music;
     using namespace Has::System;
     using namespace Ham::Gravis::Shared;
 
     LOG_CONFIGURE("test.txt");
+
+    Amd::InterWave::Initialize();
 
     Support::Allocator allocator;
 

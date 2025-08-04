@@ -43,6 +43,7 @@ include_directories(
     )
 
 add_library(ham
+            src/drivers/amd/shared/system.cpp
             src/drivers/creative/shared/system.cpp
             src/drivers/gravis/shared/system.cpp
             src/drivers/gravis/driver.cpp
