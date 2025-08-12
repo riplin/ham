@@ -2,20 +2,11 @@
 
 #pragma once
 
-#include <has/system/pnp/data.h>
+#include <has/system/pnp/control/dmaconf.h>
+#include <ham/drivers/amd/shared/pnp/device.h>
 
 namespace Ham::Amd::Shared::PnP
 {
-
-namespace Register
-{
-    enum
-    {
-        AudioRecord = 0x74,
-        AudioPlayback = 0x75,
-        CdRom = 0x74
-    };
-}
 
 // PUD1SI, PUD2SI, PRDSI—PNP DMA Select Registers
 
@@ -88,34 +79,39 @@ namespace DmaSelect
 
     inline DmaSelect_t ReadAudioRecord()
     {
-        return Has::System::PnP::Data::Read(Register::AudioRecord);
+        Device::SelectAudio();
+        return Has::System::PnP::DmaChannel::Read0();
     }
 
     inline DmaSelect_t ReadAudioPlayback()
     {
-        return Has::System::PnP::Data::Read(Register::AudioPlayback);
+        Device::SelectAudio();
+        return Has::System::PnP::DmaChannel::Read1();
     }
 
     inline DmaSelect_t ReadCdRom()
     {
-        return Has::System::PnP::Data::Read(Register::CdRom);
+        Device::SelectExternal();
+        return Has::System::PnP::DmaChannel::Read0();
     }
 
     inline void WriteAudioRecord(DmaSelect_t dmaSelect)
     {
-        Has::System::PnP::Data::Write(Register::AudioRecord, dmaSelect);
+        Device::SelectAudio();
+        Has::System::PnP::DmaChannel::Write0(dmaSelect);
     }
 
     inline void WriteAudioPlayback(DmaSelect_t dmaSelect)
     {
-        Has::System::PnP::Data::Write(Register::AudioPlayback, dmaSelect);
+        Device::SelectAudio();
+        Has::System::PnP::DmaChannel::Write1(dmaSelect);
     }
 
     inline void WriteCdRom(DmaSelect_t dmaSelect)
     {
-        Has::System::PnP::Data::Write(Register::CdRom, dmaSelect);
+        Device::SelectExternal();
+        Has::System::PnP::DmaChannel::Write0(dmaSelect);
     }
-
 }
 
 }

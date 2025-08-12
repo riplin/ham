@@ -35,6 +35,7 @@
 #include <ham/drivers/creative/shared/emu8k/voice/atkhldv.h>
 #include <ham/drivers/creative/shared/emu8k/voice/tremfrq.h>
 #include <ham/drivers/creative/shared/emu8k/voice/fm2frq2.h>
+
 namespace Ham::Creative::Shared::Functions::System
 {
 

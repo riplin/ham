@@ -73,3 +73,23 @@ target_link_libraries(test debug hagd)
 target_link_libraries(test optimized vga)
 target_link_libraries(test optimized hagsup)
 target_link_libraries(test optimized hag)
+
+add_executable(playmate
+               playmate/main.cpp
+              )
+
+#libraries are linked in reverse order
+target_link_libraries(playmate
+                      ham
+                     )
+
+target_link_libraries(playmate debug hassupd)
+target_link_libraries(playmate debug hasd)
+target_link_libraries(playmate optimized hassup)
+target_link_libraries(playmate optimized has)
+target_link_libraries(playmate debug vgad)
+target_link_libraries(playmate debug hagsupd)
+target_link_libraries(playmate debug hagd)
+target_link_libraries(playmate optimized vga)
+target_link_libraries(playmate optimized hagsup)
+target_link_libraries(playmate optimized hag)

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <has/system/pnp/control/logicdev.h>
-#include <ham/drivers/amd/shared/pnp/control/activate.h>
+#include <has/system/pnp/control/activate.h>
 
 namespace Ham::Amd::Shared::PnP
 {
@@ -13,7 +13,7 @@ namespace Device
 {
     enum
     {
-        Audio = Has::System::PnP::LogicalDevice::Card,
+        Audio = Has::System::PnP::LogicalDevice::Device0,
         External = Has::System::PnP::LogicalDevice::Device1,
         GamePort = Has::System::PnP::LogicalDevice::Device2,
         Emulation = Has::System::PnP::LogicalDevice::Device3,
@@ -44,6 +44,40 @@ namespace Device
         SYS_RestoreInterrupts();
     }
 
+    inline void SelectAudio()
+    {
+        using namespace Has::System::PnP;
+
+        LogicalDevice::Write(Audio);
+    }
+
+    inline void SelectExternal()
+    {
+        using namespace Has::System::PnP;
+
+        LogicalDevice::Write(External);
+    }
+
+    inline void SelectGamePort()
+    {
+        using namespace Has::System::PnP;
+
+        LogicalDevice::Write(GamePort);
+    }
+
+    inline void SelectEmulation()
+    {
+        using namespace Has::System::PnP;
+
+        LogicalDevice::Write(Emulation);
+    }
+
+    inline void SelectMpu401()
+    {
+        using namespace Has::System::PnP;
+
+        LogicalDevice::Write(Mpu401);
+    }
 }
 
 }

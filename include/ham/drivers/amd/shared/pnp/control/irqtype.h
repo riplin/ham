@@ -2,22 +2,11 @@
 
 #pragma once
 
-#include <has/system/pnp/data.h>
+#include <has/system/pnp/control/irqconf.h>
+#include <ham/drivers/amd/shared/pnp/device.h>
 
 namespace Ham::Amd::Shared::PnP
 {
-
-namespace Register
-{
-    enum
-    {
-        AudioChannel1InterruptType = 0x71,
-        AudioChannel2InterruptType = 0x73,
-        CdRomInterruptType = 0x71,
-        EmulationInterruptType = 0x71,
-        Mpu401InterruptType = 0x71
-    };
-}
 
 // PUI1TI, PUI2TI, PRITI, PSBITI, PMITI—PNP IRQ Type Registers
 
@@ -41,37 +30,47 @@ namespace Register
 // | PMITI      | 71h    | 04h    | PNP MPU-401 Emulation IRQ Type             |
 // +------------+--------+--------+--------------------------------------------+
 
-typedef Has::System::PnP::Data_t InterruptType_t;
+typedef Has::System::PnP::InterruptType_t InterruptType_t;
 namespace InterruptType
 {
     enum
     {
-        EdgeTriggered = 0x02
+        Type = Has::System::PnP::InterruptType::Type,
+        Edge = Has::System::PnP::InterruptType::Edge,
+        Level = Has::System::PnP::InterruptType::Level,
+        Polarity = Has::System::PnP::InterruptType::Polarity,
+        Low = Has::System::PnP::InterruptType::Low,
+        High = Has::System::PnP::InterruptType::High
     };
 
     inline InterruptType_t ReadAudioChannel1()
     {
-        return Has::System::PnP::Data::Read(Register::AudioChannel1InterruptType);
+        Device::SelectAudio();
+        return Has::System::PnP::InterruptType::Read0();
     }
 
     inline InterruptType_t ReadAudioChannel2()
     {
-        return Has::System::PnP::Data::Read(Register::AudioChannel2InterruptType);
+        Device::SelectAudio();
+        return Has::System::PnP::InterruptType::Read1();
     }
 
     inline InterruptType_t ReadCdRom()
     {
-        return Has::System::PnP::Data::Read(Register::CdRomInterruptType);
+        Device::SelectExternal();
+        return Has::System::PnP::InterruptType::Read0();
     }
 
     inline InterruptType_t ReadEmulation()
     {
-        return Has::System::PnP::Data::Read(Register::EmulationInterruptType);
+        Device::SelectEmulation();
+        return Has::System::PnP::InterruptType::Read0();
     }
 
     inline InterruptType_t ReadMpu401()
     {
-        return Has::System::PnP::Data::Read(Register::Mpu401InterruptType);
+        Device::SelectMpu401();
+        return Has::System::PnP::InterruptType::Read0();
     }
 
 }

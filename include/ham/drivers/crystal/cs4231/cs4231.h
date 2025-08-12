@@ -79,6 +79,10 @@ namespace Ham::Crystal::CS4231
     typedef Shared::CaptureBaseCount8_t CaptureBaseCount8_t;
     typedef Shared::CaptureBaseCount16_t CaptureBaseCount16_t;
     IMPORTNAMESPACEANDTYPEANDSHIFT(Shared, CaptureDataFormat);
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared, LineInputControl);
+    typedef Shared::Timer8_t Timer8_t;
+    typedef Shared::Timer16_t Timer16_t;
+    IMPORTNAMESPACEANDTYPEANDSHIFT(Shared, AlternateFeatureStatus);
     IMPORTNAMESPACEANDTYPEANDSHIFT(Shared, MonoInputOutputControl);
     IMPORTNAMESPACEANDTYPEANDSHIFT(Shared, VersionAndChipId);
 
@@ -98,6 +102,9 @@ namespace Ham::Crystal::CS4231
         IMPORTNAMESPACE(Shared::IO, AlternateFeatureEnableII);
         IMPORTNAMESPACE(Shared::IO, CaptureBaseCount);
         IMPORTNAMESPACE(Shared::IO, CaptureDataFormat);
+        IMPORTNAMESPACE(Shared::IO, LineInputControl);
+        IMPORTNAMESPACE(Shared::IO, Timer);
+        IMPORTNAMESPACE(Shared::IO, AlternateFeatureStatus);
         IMPORTNAMESPACE(Shared::IO, MonoInputOutputControl);
         IMPORTNAMESPACE(Shared::IO, VersionAndChipId);
     }

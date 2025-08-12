@@ -23,36 +23,6 @@ namespace Register
 // | FMT1 | FMT0 | C/L  | S/M  | res  | res  | res  | res  |
 // +------+------+------+------+------+------+------+------+
 
-// CSL         Clock Source Select: These bits select
-//             the clock source used for the audio
-//             sample rates.
-//             CAUTION: See note at end of this
-//             section about changing these bits
-//                 0 - XTAL1/24.576 MHz
-//                 1 - XTAL2/16.9344 MHz
-
-// Note: When only one crystal or clock source
-// is provided in hardware,it must be XTAL1.
-
-// CFS2-CFSO   Clock Frequency Divide Select: These
-//             bits select the audio sample rate
-//             frequency. The actual audio sample
-//             rate depends on which Clock Source
-//             is selected and it's frequency.
-//             CAUTION: See note below
-//             about changing bits
-
-//             XTAL1       XTAL2
-// Divide      24.576 MHz  16.9344 MHz
-// 0 - 3072    8.0 kHz     5.51 kHz
-// 1 - 1536    16.0 kHz    11.025 kHz
-// 2 - 896     27.42 kHz   18.9 kHz
-// 3 - 768     32.0 kHz    22.05 kHz
-// 4 - 448     N/A         37.8 kHz
-// 5 - 384     N/A         44.1 kHz
-// 6 - 512     48.0 kHz    33.075 kHz
-// 7 - 2560    9.6 kHz     6.62 KHZ:
-
 // S/M         Stereo/Mono Select: This bit deter-
 //             mines how the capture audio data
 //             stream is formatted. Selecting stereo

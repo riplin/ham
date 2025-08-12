@@ -2,22 +2,11 @@
 
 #pragma once
 
-#include <has/system/pnp/data.h>
+#include <has/system/pnp/control/irqconf.h>
+#include <ham/drivers/amd/shared/pnp/device.h>
 
 namespace Ham::Amd::Shared::PnP
 {
-
-namespace Register
-{
-    enum
-    {
-        AudioChannel1InterruptSelect = 0x70,
-        AudioChannel2InterruptSelect = 0x72,
-        CdRomInterruptSelect = 0x70,
-        EmulationInterruptSelect = 0x70,
-        Mpu401InterruptSelect = 0x70
-    };
-}
 
 // PUI1SI, PUI2SI, PRISI, PSBISI, PMISI—PNP IRQ Select Registers
 
@@ -79,7 +68,7 @@ namespace Register
 // |            | the Emulation IRQ register (IEIRQI[1]).                                        |
 // +------------+--------------------------------------------------------------------------------+
 
-typedef Has::System::PnP::Data_t InterruptSelect_t;
+typedef Has::System::PnP::Interrupt_t InterruptSelect_t;
 namespace InterruptSelect
 {
     enum
@@ -98,27 +87,62 @@ namespace InterruptSelect
 
     inline InterruptSelect_t ReadAudioChannel1()
     {
-        return Has::System::PnP::Data::Read(Register::AudioChannel1InterruptSelect);
+        Device::SelectAudio();
+        return Has::System::PnP::Interrupt::Read0();
     }
 
     inline InterruptSelect_t ReadAudioChannel2()
     {
-        return Has::System::PnP::Data::Read(Register::AudioChannel2InterruptSelect);
+        Device::SelectAudio();
+        return Has::System::PnP::Interrupt::Read1();
     }
 
     inline InterruptSelect_t ReadCdRom()
     {
-        return Has::System::PnP::Data::Read(Register::CdRomInterruptSelect);
+        Device::SelectExternal();
+        return Has::System::PnP::Interrupt::Read0();
     }
 
     inline InterruptSelect_t ReadEmulation()
     {
-        return Has::System::PnP::Data::Read(Register::EmulationInterruptSelect);
+        Device::SelectEmulation();
+        return Has::System::PnP::Interrupt::Read0();
     }
 
     inline InterruptSelect_t ReadMpu401()
     {
-        return Has::System::PnP::Data::Read(Register::Mpu401InterruptSelect);
+        Device::SelectMpu401();
+        return Has::System::PnP::Interrupt::Read0();
+    }
+
+    inline void WriteAudioChannel1(InterruptSelect_t interruptSelect)
+    {
+        Device::SelectAudio();
+        Has::System::PnP::Interrupt::Write0(interruptSelect);
+    }
+
+    inline void WriteAudioChannel2(InterruptSelect_t interruptSelect)
+    {
+        Device::SelectAudio();
+        Has::System::PnP::Interrupt::Write1(interruptSelect);
+    }
+
+    inline void WriteCdRom(InterruptSelect_t interruptSelect)
+    {
+        Device::SelectExternal();
+        Has::System::PnP::Interrupt::Write0(interruptSelect);
+    }
+
+    inline void WriteEmulation(InterruptSelect_t interruptSelect)
+    {
+        Device::SelectEmulation();
+        Has::System::PnP::Interrupt::Write0(interruptSelect);
+    }
+
+    inline void WriteMpu401(InterruptSelect_t interruptSelect)
+    {
+        Device::SelectMpu401();
+        Has::System::PnP::Interrupt::Write0(interruptSelect);
     }
 
 }

@@ -2,33 +2,11 @@
 
 #pragma once
 
-#include <has/system/pnp/data.h>
+#include <has/system/pnp/control/iobase.h>
+#include <ham/drivers/amd/shared/pnp/device.h>
 
 namespace Ham::Amd::Shared::PnP
 {
-
-namespace Register
-{
-    enum
-    {
-        GusCompatibilityPortHigh = 0x60,
-        GusCompatibilityPortLow = 0x61,
-        MidiAndSynthesizerPortHigh = 0x62,
-        MidiAndSynthesizerPortLow = 0x63,
-        CodecPortHigh = 0x64,
-        CodecPortLow = 0x65,
-        CdRomPortHigh = 0x60,
-        CdRomPortLow = 0x61,
-        AtapiPortHigh = 0x62,
-        AtapiPortLow = 0x63,
-        JoystickPortHigh = 0x60,
-        JoystickPortLow = 0x61,
-        EmulationPortHigh = 0x60,
-        EmulationPortLow = 0x61,
-        Mpu401PortHigh = 0x60,
-        Mpu401PortLow = 0x61
-    };
-}
 
 // Table 12-3
 // PNP Address Control Registers
@@ -128,134 +106,110 @@ namespace AddressControl
 {
     enum
     {
-        GusCompatibilityPortHigh = 0x03,
-        GusCompatibilityPortLow = 0xF0,
-        MidiAndSynthesizerPortHigh = 0x01,
-        MidiAndSynthesizerPortLow = 0xF8,
-        CodecPortHigh = 0x03,
-        CodecPortLow = 0xFC,
-        CdRomPortHigh = 0x03,
-        CdRomPortLow = 0xF8,
-        AtapiPortHigh = 0x03,
-        AtapiPortLow = 0xFE,
-        JoystickPortHigh = 0x03,
-        JoystickPortLow = 0xC0,
-        EmulationPortHigh = 0x03,
-        EmulationPortLow = 0xC0,
-        Mpu401PortHigh = 0xFF,
-        Mpu401PortLow = 0xFF
+        GusCompatibilityPort = 0x03F0,
+        MidiAndSynthesizerPort = 0x01F8,
+        CodecPort = 0x03FC,
+        CdRomPort = 0x03F8,
+        AtapiPort = 0x03FE,
+        JoystickPort = 0x03C0,
+        EmulationPort = 0x03C0,
+        Mpu401PortHigh = 0xFFFF
     };
 
     inline Has::System::PnP::Register_t ReadGusCompatibilityPort()
     {
-        using namespace Has::System::PnP;
-        return (Register_t(Data::Read(Register::GusCompatibilityPortHigh)) << 8) |
-            Data::Read(Register::GusCompatibilityPortLow);
+        Device::SelectAudio();
+        return Has::System::PnP::IoBaseAddress::Read0();
     }
 
     inline Has::System::PnP::Register_t ReadMidiAndSynthesizerPort()
     {
-        using namespace Has::System::PnP;
-        return (Register_t(Data::Read(Register::MidiAndSynthesizerPortHigh)) << 8) |
-            Data::Read(Register::MidiAndSynthesizerPortLow);
+        Device::SelectAudio();
+        return Has::System::PnP::IoBaseAddress::Read1();
     }
 
     inline Has::System::PnP::Register_t ReadCodecPort()
     {
-        using namespace Has::System::PnP;
-        return (Register_t(Data::Read(Register::CodecPortHigh)) << 8) |
-            Data::Read(Register::CodecPortLow);
+        Device::SelectAudio();
+        return Has::System::PnP::IoBaseAddress::Read2();
     }
 
     inline Has::System::PnP::Register_t ReadCdRomPort()
     {
-        using namespace Has::System::PnP;
-        return (Register_t(Data::Read(Register::CdRomPortHigh)) << 8) |
-            Data::Read(Register::CdRomPortLow);
+        Device::SelectExternal();
+        return Has::System::PnP::IoBaseAddress::Read0();
     }
 
     inline Has::System::PnP::Register_t ReadAtapiPort()
     {
-        using namespace Has::System::PnP;
-        return (Register_t(Data::Read(Register::AtapiPortHigh)) << 8) |
-            Data::Read(Register::AtapiPortLow);
+        Device::SelectExternal();
+        return Has::System::PnP::IoBaseAddress::Read1();
     }
 
     inline Has::System::PnP::Register_t ReadJoystickPort()
     {
-        using namespace Has::System::PnP;
-        return (Register_t(Data::Read(Register::JoystickPortHigh)) << 8) |
-            Data::Read(Register::JoystickPortLow);
+        Device::SelectGamePort();
+        return Has::System::PnP::IoBaseAddress::Read0();
     }
 
     inline Has::System::PnP::Register_t ReadEmulationPort()
     {
-        using namespace Has::System::PnP;
-        return (Register_t(Data::Read(Register::EmulationPortHigh)) << 8) |
-            Data::Read(Register::EmulationPortLow);
+        Device::SelectEmulation();
+        return Has::System::PnP::IoBaseAddress::Read0();
     }
 
     inline Has::System::PnP::Register_t ReadMpu401Port()
     {
-        using namespace Has::System::PnP;
-        return (Register_t(Data::Read(Register::Mpu401PortHigh)) << 8) |
-            Data::Read(Register::Mpu401PortLow);
+        Device::SelectMpu401();
+        return Has::System::PnP::IoBaseAddress::Read0();
     }
 
     inline void WriteGusCompatibilityPort(Has::System::PnP::Register_t port)
     {
-        using namespace Has::System::PnP;
-        Data::Write(Register::GusCompatibilityPortHigh, AddressControl_t(port >> 8));
-        Data::Write(Register::GusCompatibilityPortLow, AddressControl_t(port));
+        Device::SelectAudio();
+        Has::System::PnP::IoBaseAddress::Write0(port);
     }
 
     inline void WriteMidiAndSynthesizerPort(Has::System::PnP::Register_t port)
     {
-        using namespace Has::System::PnP;
-        Data::Write(Register::MidiAndSynthesizerPortHigh, AddressControl_t(port >> 8));
-        Data::Write(Register::MidiAndSynthesizerPortLow, AddressControl_t(port));
+        Device::SelectAudio();
+        Has::System::PnP::IoBaseAddress::Write1(port);
     }
 
     inline void WriteCodecPort(Has::System::PnP::Register_t port)
     {
-        using namespace Has::System::PnP;
-        Data::Write(Register::CodecPortHigh, AddressControl_t(port >> 8));
-        Data::Write(Register::CodecPortLow, AddressControl_t(port));
+        Device::SelectAudio();
+        Has::System::PnP::IoBaseAddress::Write2(port);
     }
 
     inline void WriteCdRomPort(Has::System::PnP::Register_t port)
     {
-        using namespace Has::System::PnP;
-        Data::Write(Register::CdRomPortHigh, AddressControl_t(port >> 8));
-        Data::Write(Register::CdRomPortLow, AddressControl_t(port));
+        Device::SelectExternal();
+        Has::System::PnP::IoBaseAddress::Write0(port);
     }
 
     inline void WriteAtapiPort(Has::System::PnP::Register_t port)
     {
-        using namespace Has::System::PnP;
-        Data::Write(Register::AtapiPortHigh, AddressControl_t(port >> 8));
-        Data::Write(Register::AtapiPortLow, AddressControl_t(port));
+        Device::SelectExternal();
+        Has::System::PnP::IoBaseAddress::Write1(port);
     }
 
     inline void WriteJoystickPort(Has::System::PnP::Register_t port)
     {
-        using namespace Has::System::PnP;
-        Data::Write(Register::JoystickPortHigh, AddressControl_t(port >> 8));
-        Data::Write(Register::JoystickPortLow, AddressControl_t(port));
+        Device::SelectGamePort();
+        Has::System::PnP::IoBaseAddress::Write0(port);
     }
 
     inline void WriteEmulationPort(Has::System::PnP::Register_t port)
     {
-        using namespace Has::System::PnP;
-        Data::Write(Register::EmulationPortHigh, AddressControl_t(port >> 8));
-        Data::Write(Register::EmulationPortLow, AddressControl_t(port));
+        Device::SelectEmulation();
+        Has::System::PnP::IoBaseAddress::Write0(port);
     }
 
     inline void WriteMpu401Port(Has::System::PnP::Register_t port)
     {
-        using namespace Has::System::PnP;
-        Data::Write(Register::Mpu401PortHigh, AddressControl_t(port >> 8));
-        Data::Write(Register::Mpu401PortLow, AddressControl_t(port));
+        Device::SelectMpu401();
+        Has::System::PnP::IoBaseAddress::Write0(port);
     }
 
 }

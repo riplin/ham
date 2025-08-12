@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <has/types.h>
+#include <has/ialloc.h>
 
 namespace Ham::Amd::Shared::System
 {
@@ -16,9 +16,11 @@ namespace InitializeError
         AlreadyInitialized = 0x01,
         NoCardsFound = 0x02,
     };
+
+    extern const char* ToString(InitializeError_t error);
 }
 
-extern InitializeError_t Initialize();
+extern InitializeError_t Initialize(Has::IAllocator& allocator);
 extern void Shutdown();
 
 }
